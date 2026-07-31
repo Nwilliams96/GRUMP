@@ -24,7 +24,7 @@
         <a href="workshop/index.html">GRUMP Workshop</a>
         <a href="https://simonscmap.com/catalog/datasets/GRUMP" target="_blank" rel="noopener">CMAP ↗</a>
         <a href="https://zenodo.org/records/15446784" target="_blank" rel="noopener">Zenodo ↗</a>
-        <a href="https://www.nathanlrwilliams.com" target="_blank" rel="noopener">Project lead ↗</a>
+        <a href="https://www.nathanlrwilliams.com" target="_blank" rel="noopener">Project Contact ↗</a>
       </nav>
     </div>
   </header>
@@ -128,6 +128,12 @@
         </div>
       </div>
 
+      <div class="explorer-downloads" aria-label="Download explorer outputs">
+        <button class="download-button" id="download-map-image" type="button">Download map PNG</button>
+        <button class="download-button" id="download-depth-image" type="button">Download cross-section PNG</button>
+        <button class="download-button" id="download-explorer-data" type="button">Download filtered data CSV</button>
+      </div>
+
       <figure class="interactive-figure">
         <div class="interactive-figure-heading">
           <h3>Global sampling map</h3>
@@ -141,13 +147,13 @@
 
       <figure class="interactive-figure">
         <div class="interactive-figure-heading">
-          <h3>Depth profile</h3>
+          <h3>Cross Section by Depth and Latitude</h3>
           <p>Depth increases downward; latitude runs from south to north.</p>
         </div>
         <div class="chart-frame" id="depth-frame">
-          <svg id="grump-depth-chart" viewBox="0 0 1000 500" role="img" aria-label="Interactive GRUMP depth profile by latitude"></svg>
+          <svg id="grump-depth-chart" viewBox="0 0 1000 500" role="img" aria-label="Interactive GRUMP cross section by depth and latitude"></svg>
         </div>
-        <figcaption>Interactive Figure 2. Latitude and sampling depth for the filtered GRUMP samples.</figcaption>
+        <figcaption>Interactive Figure 2. Cross section by depth and latitude for the filtered GRUMP samples.</figcaption>
       </figure>
     </section>
 

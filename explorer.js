@@ -9,6 +9,9 @@
   const taxonValue = document.querySelector("#taxon-value");
   const status = document.querySelector("#explorer-status");
   const abundanceLegend = document.querySelector("#abundance-legend");
+  const downloadMapImage = document.querySelector("#download-map-image");
+  const downloadDepthImage = document.querySelector("#download-depth-image");
+  const downloadExplorerData = document.querySelector("#download-explorer-data");
 
   if (!data || !world || !window.d3 || !window.topojson || !mapElement || !depthElement) {
     if (status) status.textContent = "The GRUMP explorer could not load. Please refresh the page.";
@@ -36,6 +39,116 @@
 
   const displayName = (value) => value.replaceAll("_", " ");
   const formatAbundance = d3.format(".3~g");
+
+  const safeFilePart = (value) => String(value || "all-samples")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80);
+
+  const downloadBlob = (blob, fileName) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const currentFileStem = () => {
+    const taxon = taxonValue.value ? displayName(taxonValue.value) : "sample-locations";
+    const location = locationField.value === "all"
+      ? "all-locations"
+      : `${locationField.value}-${locationValue.value}`;
+    return `grump-${safeFilePart(taxon)}-${safeFilePart(location)}`;
+  };
+
+  const downloadSvgAsPng = (svgElement, suffix) => {
+    const clone = svgElement.cloneNode(true);
+    const viewBox = svgElement.viewBox.baseVal;
+    const width = viewBox.width || 1000;
+    const height = viewBox.height || 500;
+    clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    clone.setAttribute("width", width);
+    clone.setAttribute("height", height);
+
+    const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
+    style.textContent = `
+      svg { background: #ffffff; }
+      .map-graticule { fill: none; stroke: #d8d8d2; stroke-width: 0.7; }
+      .map-land { fill: #ecece7; stroke: #94948e; stroke-width: 0.8; }
+      .map-sample-points circle, .depth-sample-points circle { fill: #c8c8c3; fill-opacity: 1; }
+      .map-abundance-points circle, .depth-abundance-points circle { fill: #176b87; stroke: #ffffff; stroke-width: 0.8; fill-opacity: 0.88; }
+      .chart-grid line { stroke: #deded9; stroke-width: 1; }
+      .chart-grid path { display: none; }
+      .chart-axis path, .chart-axis line { stroke: #777772; }
+      .chart-axis text, .chart-axis-label { fill: #666662; font-family: Arial, sans-serif; font-size: 12px; }
+    `;
+    clone.insertBefore(style, clone.firstChild);
+
+    const source = new XMLSerializer().serializeToString(clone);
+    const sourceBlob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
+    const sourceUrl = URL.createObjectURL(sourceBlob);
+    const image = new Image();
+
+    image.onload = () => {
+      const scale = 2;
+      const canvas = document.createElement("canvas");
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      const context = canvas.getContext("2d");
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(sourceUrl);
+      canvas.toBlob((blob) => {
+        if (blob) downloadBlob(blob, `${currentFileStem()}-${suffix}.png`);
+      }, "image/png");
+    };
+
+    image.src = sourceUrl;
+  };
+
+  const csvCell = (value) => {
+    if (value === null || value === undefined) return "";
+    const text = String(value);
+    return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+  };
+
+  const downloadFilteredCsv = () => {
+    const filteredSamples = getFilteredSamples();
+    const abundanceBySample = getAbundanceMap();
+    const selectedTaxon = taxonValue.value;
+    const level = levels[taxonomyLevel.value];
+    const columns = [
+      "sample_index", "latitude", "longitude", "depth_m", "cruise", "year", "month", "day",
+      "longhurst_province", "depth_zone", "taxonomy_level", "selected_taxon",
+      "total_relative_abundance", "detected"
+    ];
+    const rows = filteredSamples.map((sample) => {
+      const hasAbundance = selectedTaxon && abundanceBySample.has(sample.index);
+      return [
+        sample.index + 1,
+        sample.lat,
+        sample.lon,
+        sample.depth,
+        sample.cruise,
+        sample.year,
+        sample.month,
+        sample.day,
+        sample.province,
+        sample.depthZone,
+        selectedTaxon ? level.label : "",
+        selectedTaxon ? displayName(selectedTaxon) : "",
+        hasAbundance ? abundanceBySample.get(sample.index) : "",
+        selectedTaxon ? (hasAbundance ? "yes" : "no") : ""
+      ];
+    });
+    const csv = [columns, ...rows].map((row) => row.map(csvCell).join(",")).join("\n");
+    downloadBlob(new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" }), `${currentFileStem()}-data.csv`);
+  };
 
   Object.entries(levels).forEach(([key, level]) => {
     const option = document.createElement("option");
@@ -301,6 +414,9 @@
     updateExplorer();
   });
   taxonValue.addEventListener("change", updateExplorer);
+  downloadMapImage.addEventListener("click", () => downloadSvgAsPng(mapElement, "map"));
+  downloadDepthImage.addEventListener("click", () => downloadSvgAsPng(depthElement, "cross-section"));
+  downloadExplorerData.addEventListener("click", downloadFilteredCsv);
 
   populateLocationValues();
   populateTaxa();

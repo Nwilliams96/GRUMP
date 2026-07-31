@@ -523,6 +523,28 @@ button { font: inherit; }
   width: 20px;
   height: 20px;
 }
+.explorer-downloads {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0 0 8px;
+}
+.download-button {
+  min-height: 40px;
+  padding: 9px 13px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  font: 700 0.72rem var(--sans);
+  letter-spacing: 0.04em;
+}
+.download-button:hover,
+.download-button:focus-visible {
+  background: var(--ink);
+  color: var(--white);
+}
 .interactive-figure {
   margin: 52px 0 0;
 }
