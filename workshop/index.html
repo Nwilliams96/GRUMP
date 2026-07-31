@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="A hands-on R workshop for exploring and plotting the GRUMP global-ocean dataset." />
+  <title>GRUMP Workshop</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="data/grump-taxonomy-index.js"></script>
+  <script defer src="../js/script.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="wordmark" href="../index.html">GRUMP</a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+      <nav class="site-nav" id="site-navigation" aria-label="Main navigation">
+        <a href="../index.html">Explorer</a>
+        <a href="index.html" aria-current="page">GRUMP Workshop</a>
+        <a href="https://simonscmap.com/catalog/datasets/GRUMP" target="_blank" rel="noopener">CMAP ↗</a>
+        <a href="https://zenodo.org/records/15446784" target="_blank" rel="noopener">Zenodo ↗</a>
+        <a href="https://www.nathanlrwilliams.com" target="_blank" rel="noopener">Project lead ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="page-hero">
+      <div class="page-hero-inner">
+        <p class="eyebrow">Getting started with GRUMP</p>
+        <h1>Explore plankton in R.</h1>
+        <p class="lead">
+          A practical, step-by-step workshop for finding a taxon in GRUMP and plotting its global distribution,
+          depth profile, and abundance across Longhurst provinces.
+        </p>
+        <div class="hero-actions">
+          <a class="button-link" href="https://github.com/Nwilliams96/GRUMP-Workshop-2025/raw/refs/heads/main/01-Scripts/GRUMP-Workshop.Rmd">Download the R workbook ↓</a>
+          <a class="button-link" href="https://github.com/Nwilliams96/GRUMP-Workshop-2025" target="_blank" rel="noopener">View on GitHub ↗</a>
+          <a class="button-link" href="https://simonscmap.com/catalog/datasets/GRUMP" target="_blank" rel="noopener">Get GRUMP data ↗</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="wide-section">
+      <div class="tutorial-layout">
+        <nav class="tutorial-nav" aria-label="Workshop sections">
+          <a href="#prepare">01 · Prepare</a>
+          <a href="#load">02 · Load data</a>
+          <a href="#taxonomy">03 · Search taxonomy</a>
+          <a href="#abundance">04 · Calculate abundance</a>
+          <a href="#map">05 · Make a map</a>
+          <a href="#depth">06 · Plot depth</a>
+          <a href="#longhurst">07 · Compare provinces</a>
+        </nav>
+
+        <div>
+          <section class="tutorial-step" id="prepare">
+            <p class="kicker">01 · Prepare</p>
+            <h2>Install and load the packages.</h2>
+            <p>
+              Install R and RStudio first. This workshop uses the tidyverse for data wrangling and plotting,
+              plus rnaturalearth and sf for the map.
+            </p>
+            <div class="code-shell">
+              <button class="copy-button" type="button" data-copy-target="#code-prepare">Copy</button>
+              <pre><code id="code-prepare">install.packages("tidyverse")
+install.packages("rnaturalearth")
+install.packages("rnaturalearthdata")
+install.packages("sf")
+
+library("tidyverse")
+library("rnaturalearth")
+library("rnaturalearthdata")
+library("sf")</code></pre>
+            </div>
+          </section>
+
+          <section class="tutorial-step" id="load">
+            <p class="kicker">02 · Load data</p>
+            <h2>Set the working directory.</h2>
+            <p>
+              Download the GRUMP data from CMAP and place it on your Desktop in
+              <strong>GRUMP-Workshop/02-Data</strong>. Name the file <strong>Grump_data.csv</strong>.
+            </p>
+            <div class="code-shell">
+              <button class="copy-button" type="button" data-copy-target="#code-load">Copy</button>
+              <pre><code id="code-load">setwd("~/Desktop/GRUMP-Workshop/02-Data/")
+grump_data &lt;- read_csv("Grump_data.csv")
+
+str(grump_data)</code></pre>
+            </div>
+          </section>
+
+          <section class="tutorial-step" id="taxonomy">
+            <p class="kicker">03 · Browse taxonomy</p>
+            <h2>Find your plankton.</h2>
+            <p>
+              First, run this code in R to build a smaller taxonomy table. It contains one row for each ASV and makes
+              it easier to inspect the organisms represented in GRUMP.
+            </p>
+            <div class="code-shell">
+              <button class="copy-button" type="button" data-copy-target="#code-taxonomy">Copy</button>
+              <pre><code id="code-taxonomy">grump_taxonomy &lt;- grump_data %&gt;%
+  select(
+    Domain, Supergroup, Division, Phylum, Class,
+    Order, Family, Genus, Species, ProPortal_ASV_Ecotype,
+    Sequence_Type, ASV_hash, ASV
+  ) %&gt;%
+  group_by(ASV_hash, Domain) %&gt;%
+  distinct(ASV_hash, .keep_all = TRUE)</code></pre>
+            </div>
+
+            <div class="taxonomy-tool">
+              <label for="taxonomy-search">Search all GRUMP taxonomy levels</label>
+              <p>
+                Type a taxon such as <em>Vibrio</em>, <em>Prochlorococcus</em>, or <em>Dinoflagellata</em>. Results show
+                the matching taxonomic level. Select the result you want and the R code below will update automatically.
+              </p>
+              <input
+                id="taxonomy-search"
+                class="taxonomy-input"
+                type="search"
+                placeholder="Search 6,598 named taxa..."
+                autocomplete="off"
+                aria-controls="taxonomy-results"
+              />
+              <p class="taxonomy-status" id="taxonomy-status" aria-live="polite">Start typing to search the GRUMP taxonomy.</p>
+              <div class="taxonomy-results" id="taxonomy-results" role="listbox" aria-label="Matching taxa"></div>
+            </div>
+
+            <div class="generated-code">
+              <p class="kicker">Your taxonomy chunk</p>
+              <h3 id="taxonomy-selection-label">Genus · Vibrio</h3>
+              <p>
+                Copy this personalized chunk into your R script immediately after the taxonomy-table code above, then
+                run it. You can replace it at any time by searching for and selecting another taxon.
+              </p>
+              <div class="code-shell">
+                <button class="copy-button" type="button" data-copy-target="#code-selected-taxonomy">Copy</button>
+                <pre><code id="code-selected-taxonomy">my_planktons_taxonomy &lt;- grump_taxonomy %&gt;%
+  filter(Genus %in% c("Vibrio"))
+
+my_plankton_data &lt;- grump_data %&gt;%
+  filter(Genus %in% c("Vibrio"))</code></pre>
+              </div>
+            </div>
+          </section>
+
+          <section class="tutorial-step" id="abundance">
+            <p class="kicker">04 · Calculate abundance</p>
+            <h2>Sum ASVs within each sample.</h2>
+            <p>
+              Many organisms have multiple ASVs in one sample. This step calculates total relative abundance for
+              your selected taxon and keeps one row per sample. The taxonomic level in this code also updates when
+              you select a search result above.
+            </p>
+            <div class="code-shell">
+              <button class="copy-button" type="button" data-copy-target="#code-abundance">Copy</button>
+              <pre><code id="code-abundance">my_plankton_data &lt;- my_plankton_data %&gt;%
+  group_by(SampleID, Genus) %&gt;%
+  mutate(
+    Total_Relative_Abundance = sum(Relative_Abundance)
+  ) %&gt;%
+  ungroup() %&gt;%
+  distinct(SampleID, .keep_all = TRUE)</code></pre>
+            </div>
+          </section>
+
+          <section class="tutorial-step" id="map">
+            <p class="kicker">05 · Make a map</p>
+            <h2>Map global distribution.</h2>
+            <p>
+              Create a Robinson-projection world map, add bubbles scaled by relative abundance, and save the result
+              as a PDF in the workshop figures folder.
+            </p>
+            <div class="code-shell">
+              <button class="copy-button" type="button" data-copy-target="#code-map">Copy</button>
+              <pre><code id="code-map">world &lt;- ne_countries(
+  scale = "medium",
+  returnclass = "sf"
+) %&gt;%
+  st_set_crs(4326)
+
+robinson &lt;- paste0(
+  "+proj=robin +lon_0=-130 +x_0=0 +y_0=0 ",
+  "+ellps=WGS84 +datum=WGS84 +units=m +no_defs"
+)
+
+world_robinson &lt;- world %&gt;%
+  st_break_antimeridian(lon_0 = -130) %&gt;%
+  st_transform(crs = robinson)
+
+my_plankton_sf &lt;- st_as_sf(
+  my_plankton_data,
+  coords = c("Longitude", "Latitude"),
+  crs = 4326
+) %&gt;%
+  st_transform(crs = robinson)
+
+my_plankton_map &lt;- ggplot() +
+  geom_sf(
+    data = world_robinson,
+    fill = "grey90",
+    color = NA
+  ) +
+  geom_sf(
+    data = my_plankton_sf,
+    aes(size = Total_Relative_Abundance),
+    color = "#00b2f6",
+    alpha = 0.7
+  ) +
+  scale_size_continuous(
+    name = "Relative Abundance",
+    range = c(2, 16)
+  ) +
+  ggtitle("My plankton in the ocean") +
+  coord_sf(crs = robinson) +
+  theme_minimal(base_size = 18) +
+  theme(
+    plot.title = element_text(
+      size = 20, face = "bold", hjust = 0.5,
+      margin = margin(b = 10)
+    ),
+    axis.title = element_blank(),
+    axis.text = element_text(size = 14),
+    legend.position = "bottom",
+    legend.title = element_text(size = 16, face = "bold"),
+    legend.text = element_text(size = 14),
+    panel.grid = element_line(color = "grey85", size = 0.2)
+  )
+
+print(my_plankton_map)
+
+setwd("~/Desktop/GRUMP-Workshop/03-Figures/")
+ggsave(
+  "my_plankton_map.pdf",
+  plot = my_plankton_map,
+  width = 11.7,
+  height = 7
+)</code></pre>
+            </div>
+          </section>
+
+          <section class="tutorial-step" id="depth">
+            <p class="kicker">06 · Plot depth</p>
+            <h2>Explore the upper 200 metres.</h2>
+            <p>
+              This function lets you select one or more ocean basins while retaining depth resolution and using a
+              consistent abundance scale.
+            </p>
+            <div class="code-shell">
+              <button class="copy-button" type="button" data-copy-target="#code-depth">Copy</button>
+              <pre><code id="code-depth">my_plankton_data_depth_filtered &lt;- my_plankton_data %&gt;%
+  filter(depth &lt;= 200)
+
+global_max_abundance &lt;- max(
+  my_plankton_data_depth_filtered$Total_Relative_Abundance,
+  na.rm = TRUE
+)
+
+plot_depth_profile &lt;- function(
+  ...,
+  plot_title = "Depth Profile"
+) {
+  selected_cruises &lt;- c(...)
+
+  plot_data &lt;- my_plankton_data_depth_filtered %&gt;%
+    filter(Ocean_Basin %in% selected_cruises)
+
+  ggplot(
+    plot_data,
+    aes(
+      x = lat,
+      y = -depth,
+      size = Total_Relative_Abundance,
+      color = Ocean_Basin
+    )
+  ) +
+    geom_point(alpha = 1) +
+    scale_size_continuous(
+      range = c(1, 20),
+      name = "Relative Abundance",
+      limits = c(0, global_max_abundance)
+    ) +
+    theme_minimal() +
+    labs(
+      title = plot_title,
+      x = "Latitude",
+      y = "Depth (m)",
+      color = "Ocean_Basin"
+    ) +
+    theme(
+      text = element_text(size = 16),
+      axis.text.x = element_text(
+        angle = 45, hjust = 1, size = 14
+      ),
+      axis.text.y = element_text(size = 14),
+      axis.title.x = element_text(size = 18, face = "bold"),
+      axis.title.y = element_text(size = 18, face = "bold"),
+      plot.title = element_text(
+        size = 20, face = "bold", hjust = 0.5
+      ),
+      legend.position = "bottom",
+      legend.text = element_text(size = 14),
+      legend.title = element_text(size = 16, face = "bold")
+    )
+}
+
+all_ocean_basins_depth_profile &lt;- plot_depth_profile(
+  "Atlantic.Ocean",
+  "Southern.Ocean",
+  "Indian.Ocean",
+  "Arctic.Ocean",
+  "Pacific.Ocean",
+  plot_title = "Depth Profile"
+)
+
+print(all_ocean_basins_depth_profile)
+
+setwd("~/Desktop/GRUMP-Workshop/03-Figures/")
+ggsave(
+  "all_ocean_basins_depth_profile.pdf",
+  plot = all_ocean_basins_depth_profile,
+  width = 11.7,
+  height = 7
+)</code></pre>
+            </div>
+          </section>
+
+          <section class="tutorial-step" id="longhurst">
+            <p class="kicker">07 · Compare provinces</p>
+            <h2>Plot Longhurst biogeography.</h2>
+            <p>
+              Compare abundance across Longhurst provinces with a log-scaled box plot and save the final figure.
+            </p>
+            <div class="code-shell">
+              <button class="copy-button" type="button" data-copy-target="#code-longhurst">Copy</button>
+              <pre><code id="code-longhurst">Longhurst_Box_Plot &lt;- ggplot(
+  my_plankton_data,
+  aes(
+    x = factor(Longhurst_Long),
+    y = Total_Relative_Abundance,
+    fill = Longhurst_Long
+  )
+) +
+  geom_boxplot(alpha = 1, outlier.shape = NA) +
+  geom_jitter(width = 0.2, size = 1, alpha = 0.5) +
+  scale_y_log10() +
+  theme_minimal() +
+  labs(
+    title = "My Plankton Abundance by Longhurst Province",
+    x = "Ocean Basin",
+    y = "Total Relative Abundance",
+    fill = "Longhurst Province"
+  ) +
+  theme(
+    text = element_text(size = 16),
+    axis.text.x = element_text(
+      angle = 90, hjust = 1, size = 14
+    ),
+    axis.text.y = element_text(size = 14),
+    axis.title.x = element_text(size = 18, face = "bold"),
+    axis.title.y = element_text(size = 18, face = "bold"),
+    plot.title = element_text(
+      size = 20, face = "bold", hjust = 0.5
+    ),
+    legend.position = "none"
+  )
+
+Longhurst_Box_Plot
+
+setwd("~/Desktop/GRUMP-Workshop/03-Figures/")
+ggsave(
+  "My_Plankton_Longhurst_Box_Plot.pdf",
+  plot = Longhurst_Box_Plot,
+  width = 11.69,
+  height = 8.27,
+  units = "in"
+)</code></pre>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>© <span id="currentYear"></span> Nathan L. R. Williams</p>
+    <p>GRUMP Workshop · R</p>
+  </footer>
+</body>
+</html>

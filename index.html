@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="GRUMP — the Global rRNA Universal Metabarcoding of Plankton database." />
+  <title>GRUMP · Global Ocean Plankton Explorer</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+  <script defer src="data/grump-world-110m.js"></script>
+  <script defer src="data/grump-explorer-data.js"></script>
+  <script defer src="explorer.js"></script>
+  <script defer src="js/script.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="wordmark" href="index.html">GRUMP</a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-navigation">Menu</button>
+      <nav class="site-nav" id="site-navigation" aria-label="Main navigation">
+        <a href="index.html" aria-current="page">Explorer</a>
+        <a href="workshop/index.html">GRUMP Workshop</a>
+        <a href="https://simonscmap.com/catalog/datasets/GRUMP" target="_blank" rel="noopener">CMAP ↗</a>
+        <a href="https://zenodo.org/records/15446784" target="_blank" rel="noopener">Zenodo ↗</a>
+        <a href="https://www.nathanlrwilliams.com" target="_blank" rel="noopener">Project lead ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="page-hero">
+      <div class="page-hero-inner">
+        <p class="eyebrow">Open global-ocean dataset</p>
+        <h1>GRUMP</h1>
+        <p class="lead">
+          The Global rRNA Universal Metabarcoding of Plankton database brings bacteria, archaea, and eukaryotes
+          into a single, directly comparable view of the ocean’s plankton community.
+        </p>
+        <div class="hero-actions">
+          <a class="button-link" href="https://simonscmap.com/catalog/datasets/GRUMP" target="_blank" rel="noopener">Explore on CMAP ↗</a>
+          <a class="button-link" href="https://zenodo.org/records/15446784" target="_blank" rel="noopener">Download from Zenodo ↗</a>
+          <a class="button-link" href="https://doi.org/10.1038/s41597-025-05423-9" target="_blank" rel="noopener">Read the paper ↗</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="wide-section">
+      <p class="kicker">At a glance</p>
+      <h2>A cross-domain view of plankton across the global ocean.</h2>
+      <div class="stats-grid">
+        <div class="stat"><strong>1,194</strong><span>metabarcoding community profiles</span></div>
+        <div class="stat"><strong>19</strong><span>oceanographic sampling programs</span></div>
+        <div class="stat"><strong>0–6,015 m</strong><span>depth coverage across all major ocean basins</span></div>
+      </div>
+    </section>
+
+    <section class="section section-rule">
+      <div class="section-label">About</div>
+      <div class="section-content prose">
+        <h2>A Global Ocean Survey of Plankton From All Three Domains of Life.</h2>
+        <p>
+          GRUMP is a collection of unfractionated (0.2 µm) seawater samples that are sequenced using the universal
+          515FY–926R primer pair, which targets the nuclear 16S and 18S rRNA genes as well as the eukaryotic 16S
+          rRNA gene.
+        </p>
+        <p>
+          Because this plankton community is collected within the same sample and the sequencing is performed with
+          one primer pair, organisms can be compared across domains and samples without the barriers created by
+          separate size fractions or separate primer sets. The result is a high-resolution resource for investigating
+          plankton biogeography, interactions, and links to ocean conditions.
+        </p>
+        <p>
+          Samples were collected between 2003 and 2020 along extensive latitudinal and longitudinal transects and
+          depth profiles. GRUMP also includes environmental context such as temperature, salinity, oxygen,
+          chlorophyll, nutrients, Longhurst provinces, ocean basins, depth categories, and predicted euphotic zones
+          where available.
+        </p>
+      </div>
+    </section>
+
+    <section class="wide-section grump-explorer-section" id="explore-grump">
+      <p class="kicker">Explore GRUMP</p>
+      <h2>From the surface to the deep ocean.</h2>
+      <p class="explorer-intro">
+        The default view shows every GRUMP sample. Filter the sampling locations, choose a biological grouping level,
+        and then select an organism or plankton group. Light-grey dots show where samples exist, while blue circle
+        size shows total relative abundance within each sample.
+      </p>
+
+      <div class="explorer-controls" aria-label="GRUMP data controls">
+        <label>
+          <span>Filter samples by</span>
+          <select id="location-field">
+            <option value="all">All samples</option>
+            <option value="cruise">Cruise</option>
+            <option value="province">Longhurst province</option>
+            <option value="year">Year</option>
+            <option value="month">Month</option>
+            <option value="depthZone">Depth zone</option>
+          </select>
+        </label>
+        <label>
+          <span>Location selection</span>
+          <select id="location-value" disabled>
+            <option value="all">All samples</option>
+          </select>
+        </label>
+        <label>
+          <span>Biological level</span>
+          <select id="taxonomy-level"></select>
+        </label>
+        <label>
+          <span>Organism or group</span>
+          <select id="taxon-value"></select>
+        </label>
+      </div>
+
+      <div class="explorer-summary" aria-live="polite">
+        <p id="explorer-status">Loading GRUMP samples…</p>
+        <div class="abundance-legend" id="abundance-legend" hidden>
+          <span>Lower abundance</span>
+          <span class="abundance-size-key" aria-hidden="true">
+            <i></i><i></i><i></i>
+          </span>
+          <span>Higher abundance</span>
+        </div>
+      </div>
+
+      <figure class="interactive-figure">
+        <div class="interactive-figure-heading">
+          <h3>Global sampling map</h3>
+          <p>Drag to pan · Scroll or pinch to zoom</p>
+        </div>
+        <div class="chart-frame" id="map-frame">
+          <svg id="grump-map" viewBox="0 0 1000 520" role="img" aria-label="Interactive world map of GRUMP samples"></svg>
+        </div>
+        <figcaption>Interactive Figure 1. GRUMP sample locations and selected-group relative abundance.</figcaption>
+      </figure>
+
+      <figure class="interactive-figure">
+        <div class="interactive-figure-heading">
+          <h3>Depth profile</h3>
+          <p>Depth increases downward; latitude runs from south to north.</p>
+        </div>
+        <div class="chart-frame" id="depth-frame">
+          <svg id="grump-depth-chart" viewBox="0 0 1000 500" role="img" aria-label="Interactive GRUMP depth profile by latitude"></svg>
+        </div>
+        <figcaption>Interactive Figure 2. Latitude and sampling depth for the filtered GRUMP samples.</figcaption>
+      </figure>
+    </section>
+
+    <section class="wide-section">
+      <h2 class="section-title-only">USE THE DATA</h2>
+      <div class="resource-grid">
+        <article class="resource-card">
+          <p class="post-meta">Interactive access</p>
+          <h3>Simons CMAP</h3>
+          <p>Browse and download the long-format dataset through a user-friendly ocean-data interface.</p>
+          <a href="https://simonscmap.com/catalog/datasets/GRUMP" target="_blank" rel="noopener">Open CMAP ↗</a>
+        </article>
+        <article class="resource-card">
+          <p class="post-meta">Archived release</p>
+          <h3>Zenodo</h3>
+          <p>Download the processed relative-abundance data and associated environmental covariates.</p>
+          <a href="https://zenodo.org/records/15446784" target="_blank" rel="noopener">Open Zenodo ↗</a>
+        </article>
+        <article class="resource-card">
+          <p class="post-meta">Guided analysis</p>
+          <h3>Getting started</h3>
+          <p>Use the workshop to find a taxon and build maps, depth profiles, and biogeographic summaries in R.</p>
+          <a href="workshop/index.html">Start the workshop →</a>
+        </article>
+      </div>
+    </section>
+
+    <section class="wide-section">
+      <p class="kicker">Patch Notes</p>
+      <h2>GRUMP Updates</h2>
+      <div class="updates-list">
+        <article class="update-item">
+          <div><time datetime="2025">Current release</time></div>
+          <div>
+            <h3>GRUMP version 1.3.5</h3>
+            <p>The current published release contains 1,194 profiles from all major ocean basins. The Zenodo and CMAP records are the primary public access points.</p>
+          </div>
+        </article>
+        <article class="update-item">
+          <div><time datetime="2025-07-01">01 July 2025</time></div>
+          <div>
+            <h3>GRUMP data descriptor published</h3>
+            <p><em>Characterizing organisms from three domains of life with universal primers from throughout the global ocean</em> was published in <em>Scientific Data</em>.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>© <span id="currentYear"></span> Nathan L. R. Williams</p>
+    <p>GRUMP · Global ocean microbiology</p>
+  </footer>
+</body>
+</html>
