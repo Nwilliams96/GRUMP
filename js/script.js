@@ -137,3 +137,29 @@ my_plankton_data <- grump_data %>%
 
   taxonomySearch.addEventListener("input", showMatches);
 }
+
+const copyPaperCitationButton = document.querySelector("#copy-paper-citation");
+const paperCitation = document.querySelector("#paper-citation");
+const citationStatus = document.querySelector("#citation-status");
+
+if (copyPaperCitationButton && paperCitation && citationStatus) {
+  copyPaperCitationButton.addEventListener("click", async () => {
+    const citation = paperCitation.textContent.replace(/\s+/g, " ").trim();
+
+    try {
+      await navigator.clipboard.writeText(citation);
+      citationStatus.textContent = "Citation copied to your clipboard.";
+    } catch {
+      const textArea = document.createElement("textarea");
+      textArea.value = citation;
+      textArea.setAttribute("readonly", "");
+      textArea.style.position = "fixed";
+      textArea.style.opacity = "0";
+      document.body.append(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      textArea.remove();
+      citationStatus.textContent = "Citation copied to your clipboard.";
+    }
+  });
+}

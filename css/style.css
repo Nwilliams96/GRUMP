@@ -722,6 +722,30 @@ button { font: inherit; }
   font-size: 0.86rem;
 }
 .paper-acknowledgement-link a { text-underline-offset: 4px; }
+.citation-section { border-top: 1px solid var(--ink); }
+.citation-text {
+  max-width: 920px;
+  margin: 18px 0 30px;
+  font-family: var(--serif);
+  font-size: clamp(1.08rem, 1.7vw, 1.35rem);
+  line-height: 1.65;
+}
+.citation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.citation-download {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+.citation-status {
+  min-height: 1.25em;
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
 .tutorial-layout {
   display: grid;
   grid-template-columns: 230px minmax(0, 1fr);
