@@ -32,16 +32,35 @@
   <main id="main-content">
     <section class="page-hero">
       <div class="page-hero-inner">
-        <p class="eyebrow">Open global-ocean dataset</p>
-        <h1>GRUMP</h1>
-        <p class="lead">
-          The Global rRNA Universal Metabarcoding of Plankton database brings bacteria, archaea, and eukaryotes
-          into a single, directly comparable view of the ocean’s plankton community.
-        </p>
-        <div class="hero-actions">
-          <a class="button-link" href="https://simonscmap.com/catalog/datasets/GRUMP" target="_blank" rel="noopener">Explore on CMAP ↗</a>
-          <a class="button-link" href="https://zenodo.org/records/15446784" target="_blank" rel="noopener">Download from Zenodo ↗</a>
-          <a class="button-link" href="https://doi.org/10.1038/s41597-025-05423-9" target="_blank" rel="noopener">Read the paper ↗</a>
+        <div class="page-hero-grid">
+          <div class="page-hero-copy">
+            <p class="eyebrow">Open global-ocean dataset</p>
+            <h1>GRUMP</h1>
+            <p class="lead">
+              The Global rRNA Universal Metabarcoding of Plankton database brings bacteria, archaea, and eukaryotes
+              into a single, directly comparable view of the ocean’s plankton community.
+            </p>
+            <div class="hero-actions">
+              <a class="button-link" href="#explore-grump">Explore GRUMP ↓</a>
+              <a class="button-link" href="https://zenodo.org/records/15446784" target="_blank" rel="noopener">Download from Zenodo ↗</a>
+              <a class="button-link" href="https://doi.org/10.1038/s41597-025-05423-9" target="_blank" rel="noopener">Read the paper ↗</a>
+            </div>
+          </div>
+          <figure class="hero-coverage-map">
+            <img src="images/grump-global-coverage.jpg" alt="Global map showing GRUMP sampling transects colored by season" />
+            <figcaption>Global GRUMP coverage across seasons and ocean basins.</figcaption>
+          </figure>
+        </div>
+        <div class="hero-partners" aria-label="GRUMP partner institutions">
+          <p>Developed at USC with support from CBIOMES</p>
+          <div class="partner-logos">
+            <a class="partner-logo partner-logo-usc" href="https://www.usc.edu/" target="_blank" rel="noopener">
+              <img src="images/usc-primary-logotype.png" alt="University of Southern California" />
+            </a>
+            <a class="partner-logo partner-logo-cbiomes" href="https://cbiomes.org/" target="_blank" rel="noopener">
+              <img src="images/cbiomes-logo.png" alt="CBIOMES — Simons Collaboration on Computational Biogeochemical Modeling of Marine Ecosystems" />
+            </a>
+          </div>
         </div>
       </div>
     </section>
@@ -61,15 +80,18 @@
       <div class="section-content prose">
         <h2>A Global Ocean Survey of Plankton From All Three Domains of Life.</h2>
         <p>
-          GRUMP is a collection of unfractionated (0.2 µm) seawater samples that are sequenced using the universal
-          515FY–926R primer pair, which targets the nuclear 16S and 18S rRNA genes as well as the eukaryotic 16S
-          rRNA gene.
+          GRUMP is a dataset from unfractionated (&gt;0.2 µm) seawater samples that were sequenced using the universal
+          515FY–926R primer pair, which amplifies the nuclear 16S and 18S rRNA genes as well as the eukaryotic
+          chloroplast 16S rRNA gene. These primers have been shown to accurately reproduce microbial abundances in
+          prokaryotic and eukaryotic mock communities, and found to perfectly match 96% of all prokaryotic and
+          eukaryotic target sequences in hundreds of marine metagenomes.
         </p>
         <p>
-          Because this plankton community is collected within the same sample and the sequencing is performed with
-          one primer pair, organisms can be compared across domains and samples without the barriers created by
-          separate size fractions or separate primer sets. The result is a high-resolution resource for investigating
-          plankton biogeography, interactions, and links to ocean conditions.
+          Because the entire plankton community within each sample is collected on a single filter and the sequencing
+          is performed with one primer pair, organism abundances can be directly and quantitatively compared across
+          domains and samples without the barriers created by separate size fractions or separate primer sets. The
+          result is a high-resolution resource for investigating plankton biogeography, interactions, and links to
+          ocean conditions.
         </p>
         <p>
           Samples were collected between 2003 and 2020 along extensive latitudinal and longitudinal transects and
@@ -84,37 +106,46 @@
       <p class="kicker">Explore GRUMP</p>
       <h2>From the surface to the deep ocean.</h2>
       <p class="explorer-intro">
-        The default view shows every GRUMP sample. Filter the sampling locations, choose a biological grouping level,
-        and then select an organism or plankton group. Light-grey dots show where samples exist, while blue circle
-        size shows total relative abundance within each sample.
+        The default view shows every GRUMP sample. Layer any combination of cruise, ocean basin, province, year,
+        month, season, and depth category filters. Then search any GRUMP grouping, standard taxonomic rank, exact ASV
+        hash, or ASV sequence. Light-grey dots show where samples exist, while blue circle size shows total relative
+        abundance within each sample.
       </p>
 
       <div class="explorer-controls" aria-label="GRUMP data controls">
-        <label>
-          <span>Filter samples by</span>
-          <select id="location-field">
-            <option value="all">All samples</option>
-            <option value="cruise">Cruise</option>
-            <option value="province">Longhurst province</option>
-            <option value="year">Year</option>
-            <option value="month">Month</option>
-            <option value="depthZone">Depth zone</option>
-          </select>
-        </label>
-        <label>
-          <span>Location selection</span>
-          <select id="location-value" disabled>
-            <option value="all">All samples</option>
-          </select>
-        </label>
-        <label>
-          <span>Biological level</span>
-          <select id="taxonomy-level"></select>
-        </label>
-        <label>
-          <span>Organism or group</span>
-          <select id="taxon-value"></select>
-        </label>
+        <fieldset class="explorer-control-group location-filter-group">
+          <legend>1 · Layer sample filters</legend>
+          <div class="location-filter-grid">
+            <label><span>Cruise</span><select id="filter-cruise"></select></label>
+            <label><span>Ocean basin</span><select id="filter-ocean-basin"></select></label>
+            <label><span>Longhurst province</span><select id="filter-province"></select></label>
+            <label><span>Year</span><select id="filter-year"></select></label>
+            <label><span>Month</span><select id="filter-month"></select></label>
+            <label><span>Season</span><select id="filter-season"></select></label>
+            <label><span>Depth category</span><select id="filter-depth-zone"></select></label>
+            <button class="filter-reset-button" id="clear-location-filters" type="button">Clear sample filters</button>
+          </div>
+        </fieldset>
+        <fieldset class="explorer-control-group biological-filter-group">
+          <legend>2 · Search biological data</legend>
+          <div class="biological-filter-grid">
+            <label>
+              <span>Biological level</span>
+              <select id="taxonomy-level"></select>
+            </label>
+            <label class="taxon-search-label">
+              <span id="taxon-search-label">Organism or group</span>
+              <input id="taxon-search" list="taxon-options" type="search" autocomplete="off" placeholder="Start typing a name" />
+              <datalist id="taxon-options"></datalist>
+            </label>
+            <button class="taxon-search-button" id="apply-taxon-search" type="button">Plot distribution</button>
+            <button class="filter-reset-button" id="clear-taxon-search" type="button">Samples only</button>
+          </div>
+          <p class="asv-search-help" id="asv-search-help" hidden>
+            Paste a 32-character ASV hash from the universal amplicon pipeline, or paste the complete ASV nucleotide
+            sequence. Sequence spaces and line breaks are ignored.
+          </p>
+        </fieldset>
       </div>
 
       <div class="explorer-summary" aria-live="polite">

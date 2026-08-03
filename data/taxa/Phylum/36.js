@@ -1,0 +1,1 @@
+window.GRUMP_TAXON_DATA=window.GRUMP_TAXON_DATA||{};window.GRUMP_TAXON_DATA["Phylum:36"]={"Deferrisomatota":[[505,2.173641813e-05]],"DTB120":[[510,1.778914077e-05],[512,8.209913227e-06]],"Rs-K70_termite_group":[[720,0.0005030817231]]};

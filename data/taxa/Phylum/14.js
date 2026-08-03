@@ -1,0 +1,1 @@
+window.GRUMP_TAXON_DATA=window.GRUMP_TAXON_DATA||{};window.GRUMP_TAXON_DATA["Phylum:14"]={"WS2":[[69,2.120809274e-05]]};
