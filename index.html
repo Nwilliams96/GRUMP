@@ -109,7 +109,7 @@
         The default view shows every GRUMP sample. Layer any combination of cruise, ocean basin, province, year,
         month, season, and depth category filters. Then search any GRUMP grouping, standard taxonomic rank, exact ASV
         hash, or ASV sequence. Light-grey dots show where samples exist, while blue circle size shows total relative
-        abundance within each sample.
+        abundance within each sample. ASVs recorded as unassigned are excluded from the current explorer.
       </p>
 
       <div class="explorer-controls" aria-label="GRUMP data controls">
@@ -151,11 +151,12 @@
       <div class="explorer-summary" aria-live="polite">
         <p id="explorer-status">Loading GRUMP samples…</p>
         <div class="abundance-legend" id="abundance-legend" hidden>
-          <span>Lower abundance</span>
-          <span class="abundance-size-key" aria-hidden="true">
-            <i></i><i></i><i></i>
+          <span>Relative abundance</span>
+          <span class="abundance-size-key">
+            <span><i></i><b id="abundance-legend-low">0%</b></span>
+            <span><i></i><b id="abundance-legend-mid">0%</b></span>
+            <span><i></i><b id="abundance-legend-high">0%</b></span>
           </span>
-          <span>Higher abundance</span>
         </div>
       </div>
 

@@ -136,6 +136,10 @@ def chunk_for_taxon(field: str, taxon: str) -> str:
     return f"{digest % 64:02x}"
 
 
+def is_unassigned(row: dict) -> bool:
+    return row.get("Domain", "").strip().casefold() == "unassigned"
+
+
 def write_taxon_chunks(field: str, values_by_taxon: dict[str, dict[int, float]]) -> list[list[str]]:
     destination = TAXON_OUTPUT / field
     destination.mkdir(parents=True, exist_ok=True)
@@ -168,6 +172,7 @@ def write_taxon_chunks(field: str, values_by_taxon: dict[str, dict[int, float]])
 
 def scan_samples(samples: list[dict], sample_lookup: dict[tuple, int]) -> None:
     unmatched = 0
+    sample_ids = [set() for _ in samples]
     with SOURCE.open(newline="", encoding="utf-8-sig") as handle:
         for row in csv.DictReader(handle):
             sample_index = sample_lookup.get(source_sample_key(row))
@@ -179,14 +184,18 @@ def scan_samples(samples: list[dict], sample_lookup: dict[tuple, int]) -> None:
                 sample["oceanBasin"] = row.get("Ocean_Basin", "").strip().replace("_", " ").replace(".", " ")
             if not sample.get("season"):
                 sample["season"] = row.get("Season", "").strip()
+            sample_id = row.get("SampleID", "").strip()
+            if sample_id:
+                sample_ids[sample_index].add(sample_id)
 
     if unmatched:
         raise RuntimeError(f"{unmatched:,} source rows did not match an explorer sample")
 
-    for sample in samples:
+    for sample, identifiers in zip(samples, sample_ids):
         sample["depthZone"] = depth_zone(number(sample.get("depth")))
         sample.setdefault("oceanBasin", "")
         sample.setdefault("season", "")
+        sample["sampleIDs"] = sorted(identifiers, key=str.casefold)
 
 
 def build_taxonomy(sample_lookup: dict[tuple, int]) -> dict[str, dict]:
@@ -198,6 +207,8 @@ def build_taxonomy(sample_lookup: dict[tuple, int]) -> dict[str, dict]:
 
         with SOURCE.open(newline="", encoding="utf-8-sig") as handle:
             for row in csv.DictReader(handle):
+                if is_unassigned(row):
+                    continue
                 sample_index = sample_lookup[source_sample_key(row)]
                 try:
                     abundance = float(row.get("Relative_Abundance") or 0)
@@ -223,13 +234,18 @@ def build_taxonomy(sample_lookup: dict[tuple, int]) -> dict[str, dict]:
     return {field: level_index[field] for field in LEVEL_ORDER}
 
 
-def build_asv(sample_lookup: dict[tuple, int]) -> int:
+def build_asv(sample_lookup: dict[tuple, int]) -> tuple[int, int]:
     print("Scanning exact ASV hashes and sequences", flush=True)
     asv_values: dict[str, list] = {}
+    excluded_hashes: set[str] = set()
 
     with SOURCE.open(newline="", encoding="utf-8-sig") as handle:
         for row in csv.DictReader(handle):
             asv_hash = row.get("ASV_hash", "").strip().lower()
+            if is_unassigned(row):
+                if asv_hash:
+                    excluded_hashes.add(asv_hash)
+                continue
             sequence = "".join(row.get("ASV", "").split()).upper()
             if not asv_hash or not sequence:
                 continue
@@ -271,7 +287,8 @@ def build_asv(sample_lookup: dict[tuple, int]) -> int:
 
     count = len(asv_values)
     print(f"  ASV: {count:,} exact hashes and sequences", flush=True)
-    return count
+    print(f"  Excluded unassigned ASVs: {len(excluded_hashes):,}", flush=True)
+    return count, len(excluded_hashes)
 
 
 def main() -> None:
@@ -289,12 +306,16 @@ def main() -> None:
     print(f"Matching metadata for {len(samples):,} plotted samples", flush=True)
     scan_samples(samples, sample_lookup)
     levels = build_taxonomy(sample_lookup)
-    asv_count = build_asv(sample_lookup)
+    asv_count, excluded_asv_count = build_asv(sample_lookup)
 
     payload = {
         "samples": samples,
         "levels": levels,
-        "asv": {"label": "ASV hash or sequence", "count": asv_count},
+        "asv": {
+            "label": "ASV hash or sequence",
+            "count": asv_count,
+            "excludedUnassignedCount": excluded_asv_count,
+        },
         "sourceVersion": "GRUMP 1.3.5",
     }
     CORE_OUTPUT.write_text(

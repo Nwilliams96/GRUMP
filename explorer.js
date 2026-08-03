@@ -13,6 +13,9 @@
   const asvSearchHelp = document.querySelector("#asv-search-help");
   const status = document.querySelector("#explorer-status");
   const abundanceLegend = document.querySelector("#abundance-legend");
+  const abundanceLegendLow = document.querySelector("#abundance-legend-low");
+  const abundanceLegendMid = document.querySelector("#abundance-legend-mid");
+  const abundanceLegendHigh = document.querySelector("#abundance-legend-high");
   const downloadMapImage = document.querySelector("#download-map-image");
   const downloadDepthImage = document.querySelector("#download-depth-image");
   const downloadExplorerData = document.querySelector("#download-explorer-data");
@@ -46,7 +49,7 @@
 
   const displayName = (value) => String(value || "").replaceAll("_", " ");
   const normalizedName = (value) => displayName(value).toLowerCase().replace(/\s+/g, " ").trim();
-  const formatAbundance = d3.format(".3~g");
+  const formatPercent = (value) => `${d3.format(".3~g")(Number(value || 0) * 100)}%`;
   const loadedScripts = new Map();
   let selectedBiology = null;
   let currentTaxonLookup = new Map();
@@ -147,14 +150,16 @@
     const filteredSamples = getFilteredSamples();
     const abundanceBySample = getAbundanceMap();
     const columns = [
-      "sample_index", "latitude", "longitude", "depth_m", "cruise", "year", "month", "day",
+      "sample_index", "sample_id", "date", "latitude", "longitude", "depth_m", "cruise", "year", "month", "day",
       "longhurst_province", "ocean_basin", "season", "depth_category", "biological_level",
-      "selected_value", "asv_hash", "asv_sequence", "total_relative_abundance", "detected"
+      "selected_value", "asv_hash", "asv_sequence", "total_relative_abundance_percent", "detected"
     ];
     const rows = filteredSamples.map((sample) => {
       const hasAbundance = selectedBiology && abundanceBySample.has(sample.index);
       return [
         sample.index + 1,
+        (sample.sampleIDs || []).join("; "),
+        formatSampleDate(sample),
         sample.lat,
         sample.lon,
         sample.depth,
@@ -170,7 +175,7 @@
         selectedBiology?.raw || "",
         selectedBiology?.kind === "asv" ? selectedBiology.hash : "",
         selectedBiology?.kind === "asv" ? selectedBiology.sequence : "",
-        hasAbundance ? abundanceBySample.get(sample.index) : "",
+        hasAbundance ? abundanceBySample.get(sample.index) * 100 : "",
         selectedBiology ? (hasAbundance ? "yes" : "no") : ""
       ];
     });
@@ -387,13 +392,33 @@
   taxonomyLevel.append(asvOption);
   taxonomyLevel.value = "Level_2";
 
+  function formatSampleDate(sample) {
+    return `${sample.year}-${String(sample.month).padStart(2, "0")}-${String(sample.day).padStart(2, "0")}`;
+  }
+
   const sampleDescription = (sample) => [
-    sample.cruise,
-    `${sample.lat.toFixed(2)}°, ${sample.lon.toFixed(2)}°`,
-    `${sample.depth.toLocaleString()} m`,
-    `${monthNames[sample.month - 1]} ${sample.year}`,
-    sample.province
-  ].filter(Boolean).join(" · ");
+    `SampleID: ${(sample.sampleIDs || []).join(", ") || "Not available"}`,
+    `Latitude: ${sample.lat.toFixed(2)}`,
+    `Longitude: ${sample.lon.toFixed(2)}`,
+    `Date: ${formatSampleDate(sample)}`
+  ].join("\n");
+
+  const abundanceDescription = (sample) => [
+    `Selection: ${selectedBiology?.display || ""}`,
+    sampleDescription(sample),
+    `Relative abundance: ${formatPercent(sample.abundance)}`
+  ].join("\n");
+
+  const updateAbundanceLegend = (filteredSamples, abundanceBySample) => {
+    const visibleAbundances = filteredSamples
+      .filter((sample) => abundanceBySample.has(sample.index))
+      .map((sample) => abundanceBySample.get(sample.index));
+    const maximum = d3.max(visibleAbundances) || 0;
+    const legendValues = [maximum * 0.1, maximum * 0.5, maximum];
+    [abundanceLegendLow, abundanceLegendMid, abundanceLegendHigh].forEach((element, index) => {
+      if (element) element.textContent = formatPercent(legendValues[index]);
+    });
+  };
 
   const land = topojson.feature(world, world.objects.land);
   const projection = d3.geoNaturalEarth1()
@@ -443,9 +468,7 @@
       .attr("cx", (sample) => projection([sample.lon, sample.lat])[0])
       .attr("cy", (sample) => projection([sample.lon, sample.lat])[1])
       .attr("r", (sample) => radius(sample.abundance));
-    abundancePoints.append("title").text((sample) =>
-      `${selectedBiology.display}: ${formatAbundance(sample.abundance)} total relative abundance · ${sampleDescription(sample)}`
-    );
+    abundancePoints.append("title").text(abundanceDescription);
   };
 
   const renderDepthChart = (filteredSamples, abundanceBySample) => {
@@ -490,9 +513,7 @@
       .selectAll("circle").data(abundanceSamples.sort((a, b) => b.abundance - a.abundance)).join("circle")
       .attr("cx", (sample) => x(sample.lat)).attr("cy", (sample) => y(sample.depth))
       .attr("r", (sample) => radius(sample.abundance));
-    abundancePoints.append("title").text((sample) =>
-      `${selectedBiology.display}: ${formatAbundance(sample.abundance)} total relative abundance · ${sampleDescription(sample)}`
-    );
+    abundancePoints.append("title").text(abundanceDescription);
   };
 
   const updateExplorer = () => {
@@ -509,6 +530,7 @@
       ? `${selectedBiology.display} occurs in ${matchingSamples.toLocaleString()} of ${filteredSamples.length.toLocaleString()} samples for ${filterText}.`
       : `${filteredSamples.length.toLocaleString()} samples shown for ${filterText}. Search an organism, group, ASV hash, or ASV sequence to plot total relative abundance.`;
     abundanceLegend.hidden = !selectedBiology;
+    updateAbundanceLegend(filteredSamples, abundanceBySample);
     renderMap(filteredSamples, abundanceBySample);
     renderDepthChart(filteredSamples, abundanceBySample);
   };

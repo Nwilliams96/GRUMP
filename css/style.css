@@ -607,26 +607,39 @@ button { font: inherit; }
   font-weight: 700;
 }
 .abundance-size-key {
-  min-width: 76px;
-  height: 24px;
+  min-width: 250px;
+  min-height: 28px;
   display: inline-flex;
   align-items: center;
-  justify-content: space-around;
+  justify-content: space-between;
+  gap: 14px;
+}
+.abundance-size-key > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 .abundance-size-key i {
+  flex: 0 0 auto;
   display: inline-block;
   border-radius: 50%;
   background: var(--data-blue);
 }
-.abundance-size-key i:nth-child(1) {
+.abundance-size-key b {
+  color: var(--ink);
+  font-size: 0.68rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.abundance-size-key > span:nth-child(1) i {
   width: 6px;
   height: 6px;
 }
-.abundance-size-key i:nth-child(2) {
+.abundance-size-key > span:nth-child(2) i {
   width: 12px;
   height: 12px;
 }
-.abundance-size-key i:nth-child(3) {
+.abundance-size-key > span:nth-child(3) i {
   width: 20px;
   height: 20px;
 }
