@@ -3,6 +3,11 @@
 Standalone website for the Global rRNA Universal Metabarcoding of Plankton
 (GRUMP) explorer and R workshop.
 
+- [Open the GRUMP Explorer](https://www.nathanlrwilliams.com/GRUMP/)
+- [Open the GRUMP Workshop](https://www.nathanlrwilliams.com/GRUMP/workshop/)
+- [Download GRUMP data from Zenodo](https://zenodo.org/records/15446784)
+- [Read the GRUMP data descriptor](https://doi.org/10.1038/s41597-025-05423-9)
+
 The browser-ready explorer indexes are included. They support layered sample
 filters, all GRUMP and standard taxonomic levels, and exact lookup by ASV hash
 or ASV sequence. Distribution data are divided into small files and loaded only

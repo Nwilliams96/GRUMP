@@ -3,9 +3,128 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="GRUMP — the Global rRNA Universal Metabarcoding of Plankton database." />
-  <title>GRUMP · Global Ocean Plankton Explorer</title>
+  <meta name="description" content="Explore GRUMP global-ocean plankton data across bacteria, archaea, and eukaryotes. Search taxa or ASV hashes and map their distributions." />
+  <meta name="robots" content="index, follow, max-image-preview:large" />
+  <link rel="canonical" href="https://www.nathanlrwilliams.com/GRUMP/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="GRUMP Explorer" />
+  <meta property="og:title" content="GRUMP Explorer | Global Ocean Plankton Data &amp; ASV Search" />
+  <meta property="og:description" content="Search global-ocean plankton taxa and ASV hashes, then map their distributions across GRUMP samples." />
+  <meta property="og:url" content="https://www.nathanlrwilliams.com/GRUMP/" />
+  <meta property="og:image" content="https://www.nathanlrwilliams.com/GRUMP/images/grump-global-coverage.png" />
+  <meta property="og:image:alt" content="Global map of GRUMP ocean sampling coverage" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="GRUMP Explorer | Global Ocean Plankton Data &amp; ASV Search" />
+  <meta name="twitter:description" content="Search global-ocean plankton taxa and ASV hashes, then map their distributions across GRUMP samples." />
+  <meta name="twitter:image" content="https://www.nathanlrwilliams.com/GRUMP/images/grump-global-coverage.png" />
+  <title>GRUMP Explorer | Global Ocean Plankton Data &amp; ASV Search</title>
   <link rel="stylesheet" href="css/style.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://www.nathanlrwilliams.com/GRUMP/#website",
+        "url": "https://www.nathanlrwilliams.com/GRUMP/",
+        "name": "GRUMP Explorer",
+        "alternateName": [
+          "GRUMP",
+          "Global rRNA Universal Metabarcoding of Plankton Explorer"
+        ],
+        "description": "An interactive explorer for searching taxonomic groups and ASV hashes in the GRUMP global-ocean plankton dataset.",
+        "inLanguage": "en"
+      },
+      {
+        "@type": "WebPage",
+        "@id": "https://www.nathanlrwilliams.com/GRUMP/#webpage",
+        "url": "https://www.nathanlrwilliams.com/GRUMP/",
+        "name": "GRUMP Explorer | Global Ocean Plankton Data & ASV Search",
+        "isPartOf": { "@id": "https://www.nathanlrwilliams.com/GRUMP/#website" },
+        "about": { "@id": "https://doi.org/10.5281/zenodo.15446784" },
+        "primaryImageOfPage": {
+          "@type": "ImageObject",
+          "url": "https://www.nathanlrwilliams.com/GRUMP/images/grump-global-coverage.png"
+        },
+        "dateModified": "2026-08-05",
+        "inLanguage": "en"
+      },
+      {
+        "@type": "Dataset",
+        "@id": "https://doi.org/10.5281/zenodo.15446784",
+        "name": "Global rRNA Universal Metabarcoding of Plankton database (GRUMP)",
+        "alternateName": [
+          "GRUMP",
+          "GRUMP data",
+          "GRUMP global ocean plankton dataset"
+        ],
+        "description": "GRUMP is a global-ocean dataset of 1,194 unfractionated seawater metabarcoding community profiles spanning bacteria, archaea, and eukaryotes. The GRUMP Explorer supports taxonomic and ASV-hash searches and maps organism distributions across samples.",
+        "url": "https://www.nathanlrwilliams.com/GRUMP/",
+        "sameAs": [
+          "https://zenodo.org/records/15446784",
+          "https://simonscmap.com/catalog/datasets/GRUMP",
+          "https://doi.org/10.1038/s41597-025-05423-9"
+        ],
+        "identifier": [
+          {
+            "@type": "PropertyValue",
+            "propertyID": "DOI",
+            "value": "10.5281/zenodo.15446784"
+          },
+          {
+            "@type": "PropertyValue",
+            "propertyID": "DOI",
+            "value": "10.1038/s41597-025-05423-9"
+          }
+        ],
+        "version": "1.3.5",
+        "datePublished": "2025-05-20",
+        "license": "https://creativecommons.org/licenses/by/4.0/",
+        "creator": [
+          { "@type": "Person", "name": "Nathan Williams", "affiliation": { "@type": "Organization", "name": "University of Southern California" } },
+          { "@type": "Person", "name": "Jesse McNichol", "affiliation": { "@type": "Organization", "name": "University of Southern California" } },
+          { "@type": "Person", "name": "Yubin Raut" },
+          { "@type": "Person", "name": "Jed Fuhrman", "affiliation": { "@type": "Organization", "name": "University of Southern California" } }
+        ],
+        "publisher": {
+          "@type": "Organization",
+          "name": "University of Southern California",
+          "url": "https://www.usc.edu/"
+        },
+        "temporalCoverage": "2003/2020",
+        "spatialCoverage": {
+          "@type": "Place",
+          "name": "Global ocean: Arctic, Atlantic, Pacific, Indian, and Southern Oceans"
+        },
+        "keywords": [
+          "global ocean plankton",
+          "marine microbial ecology",
+          "metabarcoding",
+          "16S rRNA",
+          "18S rRNA",
+          "ASV",
+          "plankton biogeography"
+        ],
+        "variableMeasured": [
+          "Taxonomic relative abundance",
+          "Amplicon sequence variants",
+          "Sample latitude and longitude",
+          "Sample depth",
+          "Oceanographic environmental variables"
+        ],
+        "isAccessibleForFree": true,
+        "distribution": {
+          "@type": "DataDownload",
+          "name": "GRUMP ASV long-format dataset version 1.3.5",
+          "encodingFormat": "text/csv",
+          "contentUrl": "https://zenodo.org/api/records/15446784/files/grump_asv_long_version-1.3.5.csv/content",
+          "contentSize": "1289393987"
+        },
+        "mainEntityOfPage": { "@id": "https://www.nathanlrwilliams.com/GRUMP/#webpage" }
+      }
+    ]
+  }
+  </script>
   <script defer src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
   <script defer src="data/grump-world-110m.js"></script>
@@ -35,10 +154,11 @@
         <div class="page-hero-grid">
           <div class="page-hero-copy">
             <p class="eyebrow">Open global-ocean dataset</p>
-            <h1>GRUMP</h1>
+            <h1>GRUMP Explorer</h1>
             <p class="lead">
               The Global rRNA Universal Metabarcoding of Plankton database brings bacteria, archaea, and eukaryotes
-              into a single, directly comparable view of the ocean’s plankton community.
+              into a single, directly comparable view of the ocean’s plankton community. Search taxonomic groups or
+              ASV hashes and map their distributions across 1,194 global-ocean samples.
             </p>
             <div class="hero-actions">
               <a class="button-link" href="#explore-grump">Explore GRUMP ↓</a>
