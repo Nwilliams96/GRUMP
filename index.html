@@ -46,7 +46,7 @@
           "@type": "ImageObject",
           "url": "https://www.nathanlrwilliams.com/GRUMP/images/grump-global-coverage.png"
         },
-        "dateModified": "2026-08-05",
+        "dateModified": "2026-08-14",
         "inLanguage": "en"
       },
       {
@@ -64,6 +64,16 @@
           "https://zenodo.org/records/15446784",
           "https://simonscmap.com/catalog/datasets/GRUMP",
           "https://doi.org/10.1038/s41597-025-05423-9"
+        ],
+        "citation": [
+          "https://doi.org/10.1111/1462-2920.13023",
+          "https://doi.org/10.1111/1462-2920.15553",
+          "https://doi.org/10.1128/mSystems.00565-21",
+          "https://doi.org/10.1093/ismeco/ycae115",
+          "https://doi.org/10.1093/ismeco/ycaf131",
+          "https://doi.org/10.1093/ismeco/ycag081",
+          "https://doi.org/10.1126/science.ado5323",
+          "https://doi.org/10.1073/pnas.2608700123"
         ],
         "identifier": [
           {
@@ -148,8 +158,20 @@
     </div>
   </header>
 
+  <nav class="section-rail" aria-label="GRUMP page sections">
+    <span class="section-rail-title">On this page</span>
+    <a href="#overview">Overview</a>
+    <a href="#about">About</a>
+    <a href="#explore-grump">Explorer</a>
+    <a href="#use-data">Use the data</a>
+    <a href="#updates">Updates</a>
+    <a href="#acknowledgements">Acknowledgements</a>
+    <a href="#publications">Publications</a>
+    <a href="#cite-grump">Cite GRUMP</a>
+  </nav>
+
   <main id="main-content">
-    <section class="page-hero">
+    <section class="page-hero" id="overview">
       <div class="page-hero-inner">
         <div class="page-hero-grid">
           <div class="page-hero-copy">
@@ -195,7 +217,7 @@
       </div>
     </section>
 
-    <section class="section section-rule">
+    <section class="section section-rule" id="about">
       <div class="section-label">About</div>
       <div class="section-content prose">
         <h2>A Global Ocean Survey of Plankton From All Three Domains of Life.</h2>
@@ -272,11 +294,11 @@
       <div class="explorer-summary" aria-live="polite">
         <p id="explorer-status">Loading GRUMP samples…</p>
         <div class="abundance-legend" id="abundance-legend" hidden>
-          <span>Relative abundance (%)</span>
+          <span>Relative abundance (%) · fixed scale</span>
           <span class="abundance-size-key">
-            <span><i></i><b id="abundance-legend-low">0%</b></span>
-            <span><i></i><b id="abundance-legend-mid">0%</b></span>
-            <span><i></i><b id="abundance-legend-high">0%</b></span>
+            <span><i></i><b id="abundance-legend-low">1%</b></span>
+            <span><i></i><b id="abundance-legend-mid">10%</b></span>
+            <span><i></i><b id="abundance-legend-high">100%</b></span>
           </span>
         </div>
       </div>
@@ -322,7 +344,7 @@
       </figure>
     </section>
 
-    <section class="wide-section">
+    <section class="wide-section" id="use-data">
       <h2 class="section-title-only">USE THE DATA</h2>
       <div class="resource-grid">
         <article class="resource-card">
@@ -346,7 +368,7 @@
       </div>
     </section>
 
-    <section class="wide-section">
+    <section class="wide-section" id="updates">
       <p class="kicker">Patch Notes</p>
       <h2>GRUMP Updates</h2>
       <div class="updates-list">
@@ -367,7 +389,7 @@
       </div>
     </section>
 
-    <section class="wide-section acknowledgement-section">
+    <section class="wide-section acknowledgement-section" id="acknowledgements">
       <p class="kicker">Acknowledgements</p>
       <p class="acknowledgement-lead">
         GRUMP would not be possible without all of the people who contributed samples, laboratory work,
@@ -478,7 +500,72 @@
       </p>
     </section>
 
-    <section class="wide-section citation-section" aria-labelledby="cite-paper-heading">
+    <section class="wide-section grump-publications-section" id="publications">
+      <p class="kicker">Publications</p>
+      <h2>Research behind GRUMP and its applications.</h2>
+
+      <div class="grump-publication-group">
+        <h3>Publications Supporting the Development and Expansion of GRUMP</h3>
+        <ol class="grump-publication-list">
+          <li>
+            <a href="https://doi.org/10.1111/1462-2920.13023" target="_blank" rel="noopener noreferrer">
+              <span class="grump-publication-year">2016</span>
+              <span>Parada, A., Needham, D. M., &amp; Fuhrman, J. A. Every base matters: assessing small subunit rRNA primers for marine microbiomes with mock communities, time-series and global field samples. <em>Environmental Microbiology</em> 18(5), 1403–1414. DOI: 10.1111/1462-2920.13023 ↗</span>
+            </a>
+          </li>
+          <li>
+            <a href="https://doi.org/10.1111/1462-2920.15553" target="_blank" rel="noopener noreferrer">
+              <span class="grump-publication-year">2021</span>
+              <span>Yeh, Y.-C., McNichol, J. C., Needham, D. M., Fichot, E. B., &amp; Fuhrman, J. A. Comprehensive single-PCR 16S and 18S rRNA community analysis validated with mock communities, and estimation of sequencing bias against 18S. <em>Environmental Microbiology</em> 23(6), 3240–3250. DOI: 10.1111/1462-2920.15553 ↗</span>
+            </a>
+          </li>
+          <li>
+            <a href="https://doi.org/10.1128/mSystems.00565-21" target="_blank" rel="noopener noreferrer">
+              <span class="grump-publication-year">2021</span>
+              <span>McNichol, J., Berube, P. M., Biller, S. J., &amp; Fuhrman, J. A. Evaluating and improving SSU rRNA PCR primer coverage via metagenomes from global ocean surveys. <em>mSystems</em> 6, e00565-21. DOI: 10.1128/mSystems.00565-21 ↗</span>
+            </a>
+          </li>
+          <li>
+            <a href="https://doi.org/10.1093/ismeco/ycae115" target="_blank" rel="noopener noreferrer">
+              <span class="grump-publication-year">2024</span>
+              <span>Jones-Kellett, A. E., McNichol, J. C., Raut, Y., Cain, K. R., Ribalet, F., Armbrust, E. V., Follows, M. J., &amp; Fuhrman, J. A. Amplicon sequencing with internal standards yields accurate absolute picocyanobacteria cell abundances as validated with flow cytometry. <em>ISME Communications</em>, ycae115. DOI: 10.1093/ismeco/ycae115 ↗</span>
+            </a>
+          </li>
+          <li>
+            <a href="https://doi.org/10.1093/ismeco/ycaf131" target="_blank" rel="noopener noreferrer">
+              <span class="grump-publication-year">2025</span>
+              <span>Bei, Q., Williams, N. L. R., Furtado, L. E., Di Blasi, D., Williams, J., Brotas, V., Tarran, G., Rees, A. P., Bowler, C., &amp; Fuhrman, J. A. Quantitative metagenomics for marine prokaryotes and photosynthetic eukaryotes. <em>ISME Communications</em>, ycaf131. DOI: 10.1093/ismeco/ycaf131 ↗</span>
+            </a>
+          </li>
+          <li>
+            <a href="https://doi.org/10.1093/ismeco/ycag081" target="_blank" rel="noopener noreferrer">
+              <span class="grump-publication-year">2026</span>
+              <span>Williams, N. L. R., Bei, Q., Raut, Y., &amp; Fuhrman, J. A. Converting relative amplicon abundances to absolute abundances via flow cytometry: metagenomic validation and application to long ocean transects. <em>ISME Communications</em>, ycag081. DOI: 10.1093/ismeco/ycag081 ↗</span>
+            </a>
+          </li>
+        </ol>
+      </div>
+
+      <div class="grump-publication-group">
+        <h3>Applications of GRUMP</h3>
+        <ol class="grump-publication-list">
+          <li>
+            <a href="https://doi.org/10.1126/science.ado5323" target="_blank" rel="noopener noreferrer">
+              <span class="grump-publication-year">2025</span>
+              <span>Zakem, E. J., McNichol, J., Weissman, J. L., Raut, Y., Xu, L., Halewood, E. R., Carlson, C. A., Dutkiewicz, S., Fuhrman, J. A., &amp; Levine, N. M. Functional biogeography of marine microbial heterotrophs. <em>Science</em> 388, 1649. DOI: 10.1126/science.ado5323 ↗</span>
+            </a>
+          </li>
+          <li>
+            <a href="https://doi.org/10.1073/pnas.2608700123" target="_blank" rel="noopener noreferrer">
+              <span class="grump-publication-year">2026</span>
+              <span>Jones-Kellett, A. E., McNichol, J. C., Raut, Y., Fuhrman, J. A., &amp; Follows, M. J. The dynamic mesoscale sink and source niches for eukaryotic phytoplankton in a subtropical gyre. <em>Proceedings of the National Academy of Sciences</em> 123(25), e2608700123. DOI: 10.1073/pnas.2608700123 ↗</span>
+            </a>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="wide-section citation-section" id="cite-grump" aria-labelledby="cite-paper-heading">
       <p class="kicker" id="cite-paper-heading">Cite this paper</p>
       <p class="citation-text" id="paper-citation">
         McNichol, J., Williams, N. L. R., Raut, Y. et al. Characterizing organisms from three domains of life

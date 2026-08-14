@@ -17,6 +17,33 @@ if (menuButton && siteNavigation) {
   });
 }
 
+const sectionRailLinks = Array.from(document.querySelectorAll(".section-rail a[href^='#']"));
+const sectionRailTargets = sectionRailLinks
+  .map((link) => ({ link, section: document.querySelector(link.getAttribute("href")) }))
+  .filter(({ section }) => section);
+
+if (sectionRailTargets.length) {
+  let sectionRailTicking = false;
+  const updateSectionRail = () => {
+    const marker = window.scrollY + 180;
+    let active = sectionRailTargets[0];
+    sectionRailTargets.forEach((candidate) => {
+      if (candidate.section.offsetTop <= marker) active = candidate;
+    });
+    sectionRailTargets.forEach(({ link }) => {
+      if (link === active.link) link.setAttribute("aria-current", "location");
+      else link.removeAttribute("aria-current");
+    });
+    sectionRailTicking = false;
+  };
+  window.addEventListener("scroll", () => {
+    if (sectionRailTicking) return;
+    sectionRailTicking = true;
+    window.requestAnimationFrame(updateSectionRail);
+  }, { passive: true });
+  updateSectionRail();
+}
+
 const carousel = document.querySelector("[data-carousel]");
 if (carousel) {
   const slides = Array.from(carousel.querySelectorAll(".carousel-slide"));

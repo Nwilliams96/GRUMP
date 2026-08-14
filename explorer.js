@@ -57,6 +57,7 @@
   const normalizedName = (value) => displayName(value).toLowerCase().replace(/\s+/g, " ").trim();
   // GRUMP stores relative abundance as a fraction; display and export it as percent.
   const formatPercent = (value) => `${d3.format(".3~g")(Number(value || 0) * 100)}%`;
+  const abundanceRadius = d3.scaleSqrt().domain([0, 1]).range([0, 13]).clamp(true);
   const loadedScripts = new Map();
   let selectedBiology = null;
   let currentTaxonLookup = new Map();
@@ -231,7 +232,10 @@ if (any(grump$detected, na.rm = TRUE)) {
       aes(x = longitude, y = latitude, size = total_relative_abundance_percent),
       color = "#1768ac", alpha = 0.88
     ) +
-    scale_size_area(max_size = 8, name = "Relative abundance (%)")
+    scale_size_area(
+      max_size = 8, limits = c(0, 100), breaks = c(1, 10, 100),
+      name = "Relative abundance (%)"
+    )
 }
 
 map_plot <- map_plot +
@@ -295,7 +299,10 @@ if (any(grump$detected, na.rm = TRUE)) {
       aes(size = total_relative_abundance_percent),
       color = "#1768ac", alpha = 0.88
     ) +
-    scale_size_area(max_size = 8, name = "Relative abundance (%)")
+    scale_size_area(
+      max_size = 8, limits = c(0, 100), breaks = c(1, 10, 100),
+      name = "Relative abundance (%)"
+    )
 }
 
 cross_section <- cross_section +
@@ -624,12 +631,8 @@ ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "whit
     `Relative abundance: ${formatPercent(sample.abundance)}`
   ].join("\n");
 
-  const updateAbundanceLegend = (filteredSamples, abundanceBySample) => {
-    const visibleAbundances = filteredSamples
-      .filter((sample) => abundanceBySample.has(sample.index))
-      .map((sample) => abundanceBySample.get(sample.index));
-    const maximum = d3.max(visibleAbundances) || 0;
-    const legendValues = [maximum * 0.1, maximum * 0.5, maximum];
+  const updateAbundanceLegend = () => {
+    const legendValues = [0.01, 0.1, 1];
     [abundanceLegendLow, abundanceLegendMid, abundanceLegendHigh].forEach((element, index) => {
       if (element) element.textContent = formatPercent(legendValues[index]);
     });
@@ -673,8 +676,6 @@ ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "whit
     const abundanceSamples = plottedSamples
       .filter((sample) => abundanceBySample.has(sample.index))
       .map((sample) => ({ ...sample, abundance: abundanceBySample.get(sample.index) }));
-    const maximum = d3.max(abundanceSamples, (sample) => sample.abundance) || 1;
-    const radius = d3.scaleSqrt().domain([0, maximum]).range([2.8, 13]);
     const abundancePoints = viewport.append("g")
       .attr("class", "map-abundance-points")
       .selectAll("circle")
@@ -682,7 +683,7 @@ ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "whit
       .join("circle")
       .attr("cx", (sample) => projection([sample.lon, sample.lat])[0])
       .attr("cy", (sample) => projection([sample.lon, sample.lat])[1])
-      .attr("r", (sample) => radius(sample.abundance));
+      .attr("r", (sample) => abundanceRadius(sample.abundance));
     abundancePoints.append("title").text(abundanceDescription);
   };
 
@@ -732,12 +733,10 @@ ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "whit
     const abundanceSamples = filteredSamples
       .filter((sample) => abundanceBySample.has(sample.index))
       .map((sample) => ({ ...sample, abundance: abundanceBySample.get(sample.index) }));
-    const maximum = d3.max(abundanceSamples, (sample) => sample.abundance) || 1;
-    const radius = d3.scaleSqrt().domain([0, maximum]).range([2.8, 12]);
     const abundancePoints = svg.append("g").attr("class", "depth-abundance-points")
       .selectAll("circle").data(abundanceSamples.sort((a, b) => b.abundance - a.abundance)).join("circle")
       .attr("cx", (sample) => x(sample[horizontalKey])).attr("cy", (sample) => y(sample.depth))
-      .attr("r", (sample) => radius(sample.abundance));
+      .attr("r", (sample) => abundanceRadius(sample.abundance));
     abundancePoints.append("title").text(abundanceDescription);
   };
 
@@ -755,7 +754,7 @@ ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "whit
       ? `${selectedBiology.display} occurs in ${matchingSamples.toLocaleString()} of ${filteredSamples.length.toLocaleString()} samples for ${filterText}.`
       : `${filteredSamples.length.toLocaleString()} samples shown for ${filterText}. Search an organism, group, ASV hash, or ASV sequence to plot total relative abundance.`;
     abundanceLegend.hidden = !selectedBiology;
-    updateAbundanceLegend(filteredSamples, abundanceBySample);
+    updateAbundanceLegend();
     renderMap(filteredSamples, abundanceBySample);
     renderDepthChart(filteredSamples, abundanceBySample);
   };
