@@ -632,6 +632,54 @@ ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "whit
     `Relative abundance: ${formatPercent(sample.abundance)}`
   ].join("\n");
 
+  const renderAbundanceRange = (svg, abundanceSamples, width = 1000) => {
+    const values = abundanceSamples
+      .map(({ abundance }) => Number(abundance))
+      .filter((value) => Number.isFinite(value) && value > 0);
+    if (!values.length) return;
+
+    const lowest = d3.min(values);
+    const highest = d3.max(values);
+    const boxWidth = 190;
+    const boxHeight = 68;
+    const rangeBox = svg.append("g")
+      .attr("class", "chart-range-box")
+      .attr("transform", `translate(${width - boxWidth - 22},22)`)
+      .attr("pointer-events", "none")
+      .attr("aria-hidden", "true");
+
+    rangeBox.append("rect")
+      .attr("width", boxWidth)
+      .attr("height", boxHeight)
+      .attr("fill", "#ffffff")
+      .attr("fill-opacity", 0.94)
+      .attr("stroke", "#101010")
+      .attr("stroke-width", 0.8);
+    rangeBox.append("text")
+      .attr("x", 12)
+      .attr("y", 17)
+      .attr("fill", "#686868")
+      .attr("font-family", "Arial, sans-serif")
+      .attr("font-size", 9)
+      .attr("font-weight", 700)
+      .attr("letter-spacing", "1px")
+      .text("VISIBLE DETECTED RANGE");
+    rangeBox.append("text")
+      .attr("x", 12)
+      .attr("y", 39)
+      .attr("fill", "#101010")
+      .attr("font-family", "Arial, sans-serif")
+      .attr("font-size", 12)
+      .text(`Lowest: ${formatPercent(lowest)}`);
+    rangeBox.append("text")
+      .attr("x", 12)
+      .attr("y", 57)
+      .attr("fill", "#101010")
+      .attr("font-family", "Arial, sans-serif")
+      .attr("font-size", 12)
+      .text(`Highest: ${formatPercent(highest)}`);
+  };
+
   const land = topojson.feature(world, world.objects.land);
   const projection = d3.geoNaturalEarth1()
     .rotate([150, 0])
@@ -679,6 +727,7 @@ ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "whit
       .attr("cy", (sample) => projection([sample.lon, sample.lat])[1])
       .attr("r", (sample) => abundanceRadius(sample.abundance));
     abundancePoints.append("title").text(abundanceDescription);
+    renderAbundanceRange(svg, abundanceSamples);
   };
 
   const renderDepthChart = (filteredSamples, abundanceBySample) => {
@@ -732,6 +781,7 @@ ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "whit
       .attr("cx", (sample) => x(sample[horizontalKey])).attr("cy", (sample) => y(sample.depth))
       .attr("r", (sample) => abundanceRadius(sample.abundance));
     abundancePoints.append("title").text(abundanceDescription);
+    renderAbundanceRange(svg, abundanceSamples, width);
   };
 
   const updateExplorer = () => {
