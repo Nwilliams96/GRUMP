@@ -272,7 +272,7 @@
       <div class="explorer-summary" aria-live="polite">
         <p id="explorer-status">Loading GRUMP samples…</p>
         <div class="abundance-legend" id="abundance-legend" hidden>
-          <span>Relative abundance</span>
+          <span>Relative abundance (%)</span>
           <span class="abundance-size-key">
             <span><i></i><b id="abundance-legend-low">0%</b></span>
             <span><i></i><b id="abundance-legend-mid">0%</b></span>
@@ -300,13 +300,22 @@
 
       <figure class="interactive-figure">
         <div class="interactive-figure-heading">
-          <h3>Cross Section by Depth and Latitude</h3>
-          <p>Depth increases downward; latitude runs from south to north.</p>
+          <div>
+            <h3 id="cross-section-title">Cross Section by Depth and Latitude</h3>
+            <p id="cross-section-description">Depth increases downward; latitude runs from south to north.</p>
+          </div>
+          <label class="cross-section-axis-control">
+            <span>Horizontal axis</span>
+            <select id="cross-section-axis">
+              <option value="latitude">Latitude</option>
+              <option value="longitude">Longitude</option>
+            </select>
+          </label>
         </div>
         <div class="chart-frame" id="depth-frame">
           <svg id="grump-depth-chart" viewBox="0 0 1000 500" role="img" aria-label="Interactive GRUMP cross section by depth and latitude"></svg>
         </div>
-        <figcaption>Interactive Figure 2. Cross section by depth and latitude for the filtered GRUMP samples.</figcaption>
+        <figcaption id="cross-section-caption">Interactive Figure 2. Cross section by depth and latitude for the filtered GRUMP samples.</figcaption>
       </figure>
     </section>
 

@@ -19,6 +19,10 @@
   const downloadMapImage = document.querySelector("#download-map-image");
   const downloadDepthImage = document.querySelector("#download-depth-image");
   const downloadExplorerData = document.querySelector("#download-explorer-data");
+  const crossSectionAxis = document.querySelector("#cross-section-axis");
+  const crossSectionTitle = document.querySelector("#cross-section-title");
+  const crossSectionDescription = document.querySelector("#cross-section-description");
+  const crossSectionCaption = document.querySelector("#cross-section-caption");
 
   if (!data || !world || !window.d3 || !window.topojson || !mapElement || !depthElement) {
     if (status) status.textContent = "The GRUMP explorer could not load. Please refresh the page.";
@@ -49,6 +53,7 @@
 
   const displayName = (value) => String(value || "").replaceAll("_", " ");
   const normalizedName = (value) => displayName(value).toLowerCase().replace(/\s+/g, " ").trim();
+  // GRUMP stores relative abundance as a fraction; display and export it as percent.
   const formatPercent = (value) => `${d3.format(".3~g")(Number(value || 0) * 100)}%`;
   const loadedScripts = new Map();
   let selectedBiology = null;
@@ -478,7 +483,17 @@
     const height = 500;
     const margin = { top: 24, right: 28, bottom: 62, left: 82 };
     const maximumDepth = Math.max(10, d3.max(filteredSamples, (sample) => sample.depth) || 10);
-    const x = d3.scaleLinear().domain([-90, 90]).range([margin.left, width - margin.right]);
+    const useLongitude = crossSectionAxis?.value === "longitude";
+    const horizontalKey = useLongitude ? "lon" : "lat";
+    const horizontalLabel = useLongitude ? "Longitude" : "Latitude";
+    const horizontalDomain = useLongitude ? [-180, 180] : [-90, 90];
+    const horizontalTicks = useLongitude
+      ? [-180, -120, -60, 0, 60, 120, 180]
+      : [-90, -60, -30, 0, 30, 60, 90];
+    const horizontalDirection = useLongitude
+      ? (value) => value < 0 ? "W" : value > 0 ? "E" : ""
+      : (value) => value < 0 ? "S" : value > 0 ? "N" : "";
+    const x = d3.scaleLinear().domain(horizontalDomain).range([margin.left, width - margin.right]);
     const y = d3.scaleSymlog().constant(20).domain([0, maximumDepth]).range([margin.top, height - margin.bottom]);
     const depthTicks = [0, 10, 50, 200, 1000, 3000, 6000].filter((tick) => tick <= maximumDepth);
 
@@ -486,21 +501,21 @@
       d3.axisLeft(y).tickValues(depthTicks).tickSize(-(width - margin.left - margin.right)).tickFormat("")
     );
     svg.append("g").attr("class", "chart-axis").attr("transform", `translate(0,${height - margin.bottom})`).call(
-      d3.axisBottom(x).tickValues([-90, -60, -30, 0, 30, 60, 90]).tickFormat((value) => `${Math.abs(value)}°${value < 0 ? "S" : value > 0 ? "N" : ""}`)
+      d3.axisBottom(x).tickValues(horizontalTicks).tickFormat((value) => `${Math.abs(value)}°${horizontalDirection(value)}`)
     );
     svg.append("g").attr("class", "chart-axis").attr("transform", `translate(${margin.left},0)`).call(
       d3.axisLeft(y).tickValues(depthTicks).tickFormat((value) => value.toLocaleString())
     );
     svg.append("text").attr("class", "chart-axis-label")
       .attr("x", (margin.left + width - margin.right) / 2).attr("y", height - 14)
-      .attr("text-anchor", "middle").text("Latitude");
+      .attr("text-anchor", "middle").text(horizontalLabel);
     svg.append("text").attr("class", "chart-axis-label").attr("transform", "rotate(-90)")
       .attr("x", -(margin.top + height - margin.bottom) / 2).attr("y", 22)
       .attr("text-anchor", "middle").text("Depth (m)");
 
     const basePoints = svg.append("g").attr("class", "depth-sample-points")
       .selectAll("circle").data(filteredSamples).join("circle")
-      .attr("cx", (sample) => x(sample.lat)).attr("cy", (sample) => y(sample.depth)).attr("r", 2.2);
+      .attr("cx", (sample) => x(sample[horizontalKey])).attr("cy", (sample) => y(sample.depth)).attr("r", 2.2);
     basePoints.append("title").text(sampleDescription);
 
     if (!selectedBiology) return;
@@ -511,7 +526,7 @@
     const radius = d3.scaleSqrt().domain([0, maximum]).range([2.8, 12]);
     const abundancePoints = svg.append("g").attr("class", "depth-abundance-points")
       .selectAll("circle").data(abundanceSamples.sort((a, b) => b.abundance - a.abundance)).join("circle")
-      .attr("cx", (sample) => x(sample.lat)).attr("cy", (sample) => y(sample.depth))
+      .attr("cx", (sample) => x(sample[horizontalKey])).attr("cy", (sample) => y(sample.depth))
       .attr("r", (sample) => radius(sample.abundance));
     abundancePoints.append("title").text(abundanceDescription);
   };
@@ -567,6 +582,16 @@
   downloadMapImage.addEventListener("click", () => downloadSvgAsPng(mapElement, "map"));
   downloadDepthImage.addEventListener("click", () => downloadSvgAsPng(depthElement, "cross-section"));
   downloadExplorerData.addEventListener("click", downloadFilteredCsv);
+  crossSectionAxis?.addEventListener("change", () => {
+    const useLongitude = crossSectionAxis.value === "longitude";
+    const axisName = useLongitude ? "Longitude" : "Latitude";
+    const direction = useLongitude ? "west to east" : "south to north";
+    crossSectionTitle.textContent = `Cross Section by Depth and ${axisName}`;
+    crossSectionDescription.textContent = `Depth increases downward; ${axisName.toLowerCase()} runs from ${direction}.`;
+    crossSectionCaption.textContent = `Interactive Figure 2. Cross section by depth and ${axisName.toLowerCase()} for the filtered GRUMP samples.`;
+    depthElement.setAttribute("aria-label", `Interactive GRUMP cross section by depth and ${axisName.toLowerCase()}`);
+    renderDepthChart(getFilteredSamples(), getAbundanceMap());
+  });
 
   refreshLocationOptions();
   populateTaxonOptions();

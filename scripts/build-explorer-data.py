@@ -84,11 +84,6 @@ def integer(value: str | int | float | None) -> int:
         return 0
 
 
-def sample_number(value: str | int | float | None) -> float:
-    """Match the two-decimal precision used by the published explorer summary."""
-    return round(number(value), 2)
-
-
 def depth_zone(depth: float) -> str:
     if depth <= 10:
         return "Surface (0–10 m)"
@@ -99,36 +94,38 @@ def depth_zone(depth: float) -> str:
     return "Deep ocean (>1,000 m)"
 
 
-def existing_sample_key(sample: dict) -> tuple:
-    return (
-        sample_number(sample.get("lat")),
-        sample_number(sample.get("lon")),
-        sample_number(sample.get("depth")),
-        str(sample.get("cruise", "")).strip(),
-        integer(sample.get("year")),
-        integer(sample.get("month")),
-        integer(sample.get("day")),
-        str(sample.get("province", "")).strip(),
-    )
+def source_sample_key(row: dict) -> str:
+    """Keep replicate SampleIDs separate even when their metadata are identical."""
+    return row.get("SampleID", "").strip()
 
 
-def source_sample_key(row: dict) -> tuple:
-    return (
-        sample_number(row.get("Latitude") or row.get("lat")),
-        sample_number(row.get("Longitude") or row.get("lon")),
-        sample_number(row.get("depth")),
-        str(row.get("Cruise_ID", "")).strip(),
-        integer(row.get("Year")),
-        integer(row.get("Month")),
-        integer(row.get("Day")),
-        str(row.get("Longhurst_Long", "")).strip(),
-    )
+def build_samples() -> tuple[list[dict], dict[str, int]]:
+    samples: list[dict] = []
+    sample_lookup: dict[str, int] = {}
 
+    with SOURCE.open(newline="", encoding="utf-8-sig") as handle:
+        for row in csv.DictReader(handle):
+            sample_id = source_sample_key(row)
+            if not sample_id or sample_id in sample_lookup:
+                continue
+            depth = number(row.get("depth"))
+            sample_lookup[sample_id] = len(samples)
+            samples.append({
+                "lat": number(row.get("Latitude") or row.get("lat")),
+                "lon": number(row.get("Longitude") or row.get("lon")),
+                "depth": depth,
+                "cruise": row.get("Cruise_ID", "").strip(),
+                "year": integer(row.get("Year")),
+                "month": integer(row.get("Month")),
+                "day": integer(row.get("Day")),
+                "province": row.get("Longhurst_Long", "").strip(),
+                "depthZone": depth_zone(depth),
+                "oceanBasin": row.get("Ocean_Basin", "").strip().replace("_", " ").replace(".", " "),
+                "season": row.get("Season", "").strip(),
+                "sampleIDs": [sample_id],
+            })
 
-def load_existing_samples() -> list[dict]:
-    text = CORE_OUTPUT.read_text(encoding="utf-8")
-    payload = text.split("=", 1)[1].strip().removesuffix(";")
-    return json.loads(payload)["samples"]
+    return samples, sample_lookup
 
 
 def chunk_for_taxon(field: str, taxon: str) -> str:
@@ -170,35 +167,7 @@ def write_taxon_chunks(field: str, values_by_taxon: dict[str, dict[int, float]])
     ]
 
 
-def scan_samples(samples: list[dict], sample_lookup: dict[tuple, int]) -> None:
-    unmatched = 0
-    sample_ids = [set() for _ in samples]
-    with SOURCE.open(newline="", encoding="utf-8-sig") as handle:
-        for row in csv.DictReader(handle):
-            sample_index = sample_lookup.get(source_sample_key(row))
-            if sample_index is None:
-                unmatched += 1
-                continue
-            sample = samples[sample_index]
-            if not sample.get("oceanBasin"):
-                sample["oceanBasin"] = row.get("Ocean_Basin", "").strip().replace("_", " ").replace(".", " ")
-            if not sample.get("season"):
-                sample["season"] = row.get("Season", "").strip()
-            sample_id = row.get("SampleID", "").strip()
-            if sample_id:
-                sample_ids[sample_index].add(sample_id)
-
-    if unmatched:
-        raise RuntimeError(f"{unmatched:,} source rows did not match an explorer sample")
-
-    for sample, identifiers in zip(samples, sample_ids):
-        sample["depthZone"] = depth_zone(number(sample.get("depth")))
-        sample.setdefault("oceanBasin", "")
-        sample.setdefault("season", "")
-        sample["sampleIDs"] = sorted(identifiers, key=str.casefold)
-
-
-def build_taxonomy(sample_lookup: dict[tuple, int]) -> dict[str, dict]:
+def build_taxonomy(sample_lookup: dict[str, int]) -> dict[str, dict]:
     level_index: dict[str, dict] = {}
 
     for fields in LEVEL_GROUPS:
@@ -234,7 +203,7 @@ def build_taxonomy(sample_lookup: dict[tuple, int]) -> dict[str, dict]:
     return {field: level_index[field] for field in LEVEL_ORDER}
 
 
-def build_asv(sample_lookup: dict[tuple, int]) -> tuple[int, int]:
+def build_asv(sample_lookup: dict[str, int]) -> tuple[int, int]:
     print("Scanning exact ASV hashes and sequences", flush=True)
     asv_values: dict[str, list] = {}
     excluded_hashes: set[str] = set()
@@ -295,16 +264,12 @@ def main() -> None:
     if not SOURCE.exists():
         raise FileNotFoundError(f"GRUMP source table not found: {SOURCE}")
 
-    samples = load_existing_samples()
-    sample_lookup = {existing_sample_key(sample): index for index, sample in enumerate(samples)}
-    if len(sample_lookup) != len(samples):
-        raise RuntimeError("Existing explorer samples contain duplicate metadata keys")
+    samples, sample_lookup = build_samples()
 
     shutil.rmtree(TAXON_OUTPUT, ignore_errors=True)
     shutil.rmtree(ASV_OUTPUT, ignore_errors=True)
 
-    print(f"Matching metadata for {len(samples):,} plotted samples", flush=True)
-    scan_samples(samples, sample_lookup)
+    print(f"Indexed {len(samples):,} distinct SampleIDs", flush=True)
     levels = build_taxonomy(sample_lookup)
     asv_count, excluded_asv_count = build_asv(sample_lookup)
 

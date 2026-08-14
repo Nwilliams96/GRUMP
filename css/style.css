@@ -689,6 +689,27 @@ button { font: inherit; }
   color: var(--muted);
   font-size: 0.76rem;
 }
+.cross-section-axis-control {
+  flex: 0 0 190px;
+  display: grid;
+  gap: 7px;
+}
+.cross-section-axis-control span {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.cross-section-axis-control select {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 34px 8px 10px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 0.82rem var(--sans);
+}
 .chart-frame {
   width: 100%;
   overflow: hidden;
