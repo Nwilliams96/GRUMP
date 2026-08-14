@@ -17,7 +17,9 @@
   const abundanceLegendMid = document.querySelector("#abundance-legend-mid");
   const abundanceLegendHigh = document.querySelector("#abundance-legend-high");
   const downloadMapImage = document.querySelector("#download-map-image");
+  const downloadMapCode = document.querySelector("#download-map-code");
   const downloadDepthImage = document.querySelector("#download-depth-image");
+  const downloadDepthCode = document.querySelector("#download-depth-code");
   const downloadExplorerData = document.querySelector("#download-explorer-data");
   const crossSectionAxis = document.querySelector("#cross-section-axis");
   const crossSectionTitle = document.querySelector("#cross-section-title");
@@ -42,14 +44,14 @@
   ];
   const seasonOrder = ["Spring", "Summer", "Autumn", "Winter"];
   const filterDefinitions = [
-    { key: "cruise", label: "Cruise", all: "All cruises", element: document.querySelector("#filter-cruise") },
-    { key: "oceanBasin", label: "Ocean basin", all: "All ocean basins", element: document.querySelector("#filter-ocean-basin") },
-    { key: "province", label: "Longhurst province", all: "All provinces", element: document.querySelector("#filter-province") },
-    { key: "year", label: "Year", all: "All years", element: document.querySelector("#filter-year"), numeric: true },
-    { key: "month", label: "Month", all: "All months", element: document.querySelector("#filter-month"), numeric: true, format: (value) => monthNames[Number(value) - 1] },
-    { key: "season", label: "Season", all: "All seasons", element: document.querySelector("#filter-season"), order: seasonOrder },
-    { key: "depthZone", label: "Depth category", all: "All depths", element: document.querySelector("#filter-depth-zone"), order: depthZoneOrder }
-  ].filter(({ element }) => element);
+    { key: "cruise", label: "Cruise(s)", all: "All cruises", element: document.querySelector("#filter-cruise") },
+    { key: "oceanBasin", label: "Ocean basin(s)", all: "All ocean basins", element: document.querySelector("#filter-ocean-basin") },
+    { key: "province", label: "Longhurst province(s)", all: "All provinces", element: document.querySelector("#filter-province") },
+    { key: "year", label: "Year(s)", all: "All years", element: document.querySelector("#filter-year"), numeric: true },
+    { key: "month", label: "Month(s)", all: "All months", element: document.querySelector("#filter-month"), numeric: true, format: (value) => monthNames[Number(value) - 1] },
+    { key: "season", label: "Season(s)", all: "All seasons", element: document.querySelector("#filter-season"), order: seasonOrder },
+    { key: "depthZone", label: "Depth category(s)", all: "All depths", element: document.querySelector("#filter-depth-zone"), order: depthZoneOrder }
+  ].filter(({ element }) => element).map((definition) => ({ ...definition, selected: new Set() }));
 
   const displayName = (value) => String(value || "").replaceAll("_", " ");
   const normalizedName = (value) => displayName(value).toLowerCase().replace(/\s+/g, " ").trim();
@@ -78,11 +80,11 @@
   };
 
   const activeFilters = () => filterDefinitions
-    .filter(({ element }) => element.value && element.value !== "all")
-    .map((definition) => ({ ...definition, value: definition.element.value }));
+    .filter(({ selected }) => selected.size)
+    .map((definition) => ({ ...definition, values: [...definition.selected] }));
 
-  const sampleMatchesFilters = (sample, excludedKey = null) => activeFilters().every(({ key, value }) =>
-    key === excludedKey || String(sample[key]) === value
+  const sampleMatchesFilters = (sample, excludedKey = null) => activeFilters().every(({ key, values }) =>
+    key === excludedKey || values.includes(String(sample[key]))
   );
 
   const getFilteredSamples = () => samples
@@ -92,7 +94,7 @@
   const currentFileStem = () => {
     const biology = selectedBiology ? selectedBiology.display : "sample-locations";
     const filters = activeFilters().length
-      ? activeFilters().map(({ key, value }) => `${key}-${value}`).join("-")
+      ? activeFilters().map(({ key, values }) => `${key}-${values.join("+")}`).join("-")
       : "all-locations";
     return `grump-${safeFilePart(biology)}-${safeFilePart(filters)}`;
   };
@@ -150,6 +152,7 @@
   };
 
   const getAbundanceMap = () => selectedBiology?.abundanceBySample || new Map();
+  const currentDataFileName = () => `${currentFileStem()}-data.csv`;
 
   const downloadFilteredCsv = () => {
     const filteredSamples = getFilteredSamples();
@@ -185,8 +188,138 @@
       ];
     });
     const csv = [columns, ...rows].map((row) => row.map(csvCell).join(",")).join("\n");
-    downloadBlob(new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" }), `${currentFileStem()}-data.csv`);
+    downloadBlob(new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" }), currentDataFileName());
   };
+
+  const rString = (value) => `"${String(value ?? "").replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
+  const selectionDescription = () => selectedBiology?.display || "Sample locations only";
+  const filterDescription = () => activeFilters().length
+    ? activeFilters().map((definition) => `${definition.label}: ${definition.values.map((value) => formatFilterValue(definition, value)).join(", ")}`).join("; ")
+    : "All sampling locations";
+
+  const mapRCode = () => `# Reproduce the GRUMP Explorer map
+# Generated from the active explorer selection.
+# Biological selection: ${selectionDescription()}
+# Sample filters: ${filterDescription()}
+# Place this script in the same folder as ${currentDataFileName()}.
+# If needed: install.packages(c("ggplot2", "sf", "rnaturalearth"))
+
+library(ggplot2)
+library(sf)
+library(rnaturalearth)
+
+input_file <- ${rString(currentDataFileName())}
+output_file <- ${rString(`${currentFileStem()}-map-reproduced.png`)}
+plot_title <- ${rString(selectionDescription())}
+
+grump <- read.csv(input_file, check.names = FALSE, stringsAsFactors = FALSE)
+grump$detected <- tolower(as.character(grump$detected)) == "yes"
+world <- rnaturalearth::ne_countries(scale = "small", returnclass = "sf")
+
+map_plot <- ggplot() +
+  geom_sf(data = world, fill = "#ecece7", color = "#94948e", linewidth = 0.25) +
+  geom_point(
+    data = grump,
+    aes(x = longitude, y = latitude),
+    color = "#c8c8c3", size = 1.2
+  )
+
+if (any(grump$detected, na.rm = TRUE)) {
+  map_plot <- map_plot +
+    geom_point(
+      data = grump[grump$detected, ],
+      aes(x = longitude, y = latitude, size = total_relative_abundance_percent),
+      color = "#1768ac", alpha = 0.88
+    ) +
+    scale_size_area(max_size = 8, name = "Relative abundance (%)")
+}
+
+map_plot <- map_plot +
+  coord_sf(
+    crs = "+proj=natearth +lon_0=-150 +datum=WGS84 +units=m +no_defs",
+    default_crs = st_crs(4326), expand = FALSE
+  ) +
+  labs(title = plot_title, x = NULL, y = NULL) +
+  theme_minimal(base_size = 11) +
+  theme(panel.grid = element_line(color = "#deded9"), legend.position = "bottom")
+
+ggsave(output_file, map_plot, width = 12, height = 6.2, dpi = 300, bg = "white")
+`;
+
+  const crossSectionRCode = () => {
+    const useLongitude = crossSectionAxis?.value === "longitude";
+    const axisColumn = useLongitude ? "longitude" : "latitude";
+    const axisLabel = useLongitude ? "Longitude" : "Latitude";
+    const axisLimit = useLongitude ? 180 : 90;
+    const negativeDirection = useLongitude ? "W" : "S";
+    const positiveDirection = useLongitude ? "E" : "N";
+    return `# Reproduce the GRUMP Explorer cross-section
+# Generated from the active explorer selection.
+# Biological selection: ${selectionDescription()}
+# Sample filters: ${filterDescription()}
+# Place this script in the same folder as ${currentDataFileName()}.
+# If needed: install.packages("ggplot2")
+
+library(ggplot2)
+
+input_file <- ${rString(currentDataFileName())}
+output_file <- ${rString(`${currentFileStem()}-cross-section-reproduced.png`)}
+plot_title <- ${rString(`Cross Section by Depth and ${axisLabel}: ${selectionDescription()}`)}
+axis_column <- ${rString(axisColumn)}
+
+grump <- read.csv(input_file, check.names = FALSE, stringsAsFactors = FALSE)
+grump$detected <- tolower(as.character(grump$detected)) == "yes"
+
+reverse_symlog <- scales::trans_new(
+  "reverse_symlog",
+  transform = function(x) -log1p(x / 20),
+  inverse = function(x) 20 * expm1(-x),
+  domain = c(0, Inf)
+)
+
+degree_labels <- function(x) {
+  direction <- ifelse(x < 0, ${rString(negativeDirection)}, ifelse(x > 0, ${rString(positiveDirection)}, ""))
+  paste0(abs(x), "°", direction)
+}
+
+cross_section <- ggplot(
+  grump,
+  aes(x = .data[[axis_column]], y = depth_m)
+) +
+  geom_point(color = "#c8c8c3", size = 1.2)
+
+if (any(grump$detected, na.rm = TRUE)) {
+  cross_section <- cross_section +
+    geom_point(
+      data = grump[grump$detected, ],
+      aes(size = total_relative_abundance_percent),
+      color = "#1768ac", alpha = 0.88
+    ) +
+    scale_size_area(max_size = 8, name = "Relative abundance (%)")
+}
+
+cross_section <- cross_section +
+  scale_x_continuous(
+    limits = c(-${axisLimit}, ${axisLimit}),
+    breaks = seq(-${axisLimit}, ${axisLimit}, length.out = 7),
+    labels = degree_labels
+  ) +
+  scale_y_continuous(
+    trans = reverse_symlog,
+    breaks = c(0, 10, 50, 200, 1000, 3000, 6000)
+  ) +
+  labs(title = plot_title, x = ${rString(axisLabel)}, y = "Depth (m)") +
+  theme_minimal(base_size = 11) +
+  theme(panel.grid = element_line(color = "#deded9"), legend.position = "bottom")
+
+ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "white")
+`;
+  };
+
+  const downloadRCode = (code, suffix) => downloadBlob(
+    new Blob([code], { type: "text/plain;charset=utf-8" }),
+    `${currentFileStem()}-${suffix}.R`
+  );
 
   const loadDataScript = (source) => {
     if (loadedScripts.has(source)) return loadedScripts.get(source);
@@ -275,25 +408,102 @@
     return values.sort((a, b) => a.localeCompare(b));
   };
 
+  const closeFilterMenus = (except = null) => {
+    filterDefinitions.forEach((definition) => {
+      if (!definition.menu || definition === except) return;
+      definition.menu.hidden = true;
+      definition.toggle.setAttribute("aria-expanded", "false");
+    });
+  };
+
+  const updateMultiFilterSummary = (definition) => {
+    const selectedValues = [...definition.selected];
+    const formatted = selectedValues.map((value) => formatFilterValue(definition, value));
+    definition.toggle.textContent = selectedValues.length === 0
+      ? definition.all
+      : selectedValues.length === 1
+        ? formatted[0]
+        : `${selectedValues.length} selected`;
+    definition.toggle.title = formatted.length ? formatted.join(", ") : definition.all;
+  };
+
+  const initializeMultiFilters = () => {
+    filterDefinitions.forEach((definition) => {
+      const label = document.createElement("span");
+      label.className = "multi-filter-label";
+      label.textContent = definition.label;
+
+      const toggle = document.createElement("button");
+      toggle.className = "multi-filter-toggle";
+      toggle.type = "button";
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.setAttribute("aria-haspopup", "true");
+
+      const menu = document.createElement("div");
+      menu.className = "multi-filter-menu";
+      menu.id = `multi-filter-menu-${definition.key}`;
+      menu.hidden = true;
+      menu.setAttribute("role", "group");
+      menu.setAttribute("aria-label", definition.label);
+      toggle.setAttribute("aria-controls", menu.id);
+
+      definition.element.replaceChildren(label, toggle, menu);
+      definition.toggle = toggle;
+      definition.menu = menu;
+
+      toggle.addEventListener("click", () => {
+        const willOpen = menu.hidden;
+        closeFilterMenus(definition);
+        menu.hidden = !willOpen;
+        toggle.setAttribute("aria-expanded", String(willOpen));
+      });
+      updateMultiFilterSummary(definition);
+    });
+
+    document.addEventListener("click", (event) => {
+      const eventPath = event.composedPath();
+      if (!filterDefinitions.some((definition) => eventPath.includes(definition.element))) closeFilterMenus();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeFilterMenus();
+    });
+  };
+
   const refreshLocationOptions = () => {
     filterDefinitions.forEach((definition) => {
-      const currentValue = definition.element.value || "all";
       const candidateSamples = samples.filter((sample) => sampleMatchesFilters(sample, definition.key));
       const values = sortedFilterValues(definition, candidateSamples);
-      definition.element.replaceChildren();
+      definition.selected = new Set([...definition.selected].filter((value) => values.includes(value)));
+      definition.menu.replaceChildren();
 
-      const allOption = document.createElement("option");
-      allOption.value = "all";
-      allOption.textContent = definition.all;
-      definition.element.append(allOption);
+      values.forEach((value, index) => {
+        const option = document.createElement("label");
+        option.className = "multi-filter-option";
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.value = value;
+        checkbox.id = `multi-filter-${definition.key}-${index}`;
+        checkbox.checked = definition.selected.has(value);
+        const text = document.createElement("span");
+        text.textContent = formatFilterValue(definition, value);
+        option.append(checkbox, text);
+        definition.menu.append(option);
 
-      values.forEach((value) => {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = formatFilterValue(definition, value);
-        definition.element.append(option);
+        checkbox.addEventListener("change", () => {
+          if (checkbox.checked) definition.selected.add(value);
+          else definition.selected.delete(value);
+          refreshLocationOptions();
+          updateExplorer();
+        });
       });
-      definition.element.value = values.includes(currentValue) ? currentValue : "all";
+
+      if (!values.length) {
+        const empty = document.createElement("p");
+        empty.className = "multi-filter-empty";
+        empty.textContent = "No options match the other filters.";
+        definition.menu.append(empty);
+      }
+      updateMultiFilterSummary(definition);
     });
   };
 
@@ -538,7 +748,7 @@
       ? filteredSamples.filter((sample) => abundanceBySample.has(sample.index)).length
       : filteredSamples.length;
     const filterText = activeFilters().length
-      ? activeFilters().map((definition) => `${definition.label}: ${formatFilterValue(definition, definition.value)}`).join(" · ")
+      ? activeFilters().map((definition) => `${definition.label}: ${definition.values.map((value) => formatFilterValue(definition, value)).join(", ")}`).join(" · ")
       : "all sampling locations";
 
     status.textContent = selectedBiology
@@ -550,14 +760,9 @@
     renderDepthChart(filteredSamples, abundanceBySample);
   };
 
-  filterDefinitions.forEach(({ element }) => {
-    element.addEventListener("change", () => {
-      refreshLocationOptions();
-      updateExplorer();
-    });
-  });
   clearLocationFiltersButton.addEventListener("click", () => {
-    filterDefinitions.forEach(({ element }) => { element.value = "all"; });
+    filterDefinitions.forEach((definition) => definition.selected.clear());
+    closeFilterMenus();
     refreshLocationOptions();
     updateExplorer();
   });
@@ -580,7 +785,9 @@
     updateExplorer();
   });
   downloadMapImage.addEventListener("click", () => downloadSvgAsPng(mapElement, "map"));
+  downloadMapCode.addEventListener("click", () => downloadRCode(mapRCode(), "map-code"));
   downloadDepthImage.addEventListener("click", () => downloadSvgAsPng(depthElement, "cross-section"));
+  downloadDepthCode.addEventListener("click", () => downloadRCode(crossSectionRCode(), "cross-section-code"));
   downloadExplorerData.addEventListener("click", downloadFilteredCsv);
   crossSectionAxis?.addEventListener("change", () => {
     const useLongitude = crossSectionAxis.value === "longitude";
@@ -593,6 +800,7 @@
     renderDepthChart(getFilteredSamples(), getAbundanceMap());
   });
 
+  initializeMultiFilters();
   refreshLocationOptions();
   populateTaxonOptions();
   updateExplorer();

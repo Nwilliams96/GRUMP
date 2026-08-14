@@ -227,8 +227,8 @@
       <p class="kicker">Explore GRUMP</p>
       <h2>From the surface to the deep ocean.</h2>
       <p class="explorer-intro">
-        The default view shows every GRUMP sample. Layer any combination of cruise, ocean basin, province, year,
-        month, season, and depth category filters. Then search any GRUMP grouping, standard taxonomic rank, exact ASV
+        The default view shows every GRUMP sample. Select one or more cruises, ocean basins, provinces, years,
+        months, seasons, and depth categories, then layer those filters together. Search any GRUMP grouping, standard taxonomic rank, exact ASV
         hash, or ASV sequence. Light-grey dots show where samples exist, while blue circle size shows total relative
         abundance within each sample. ASVs recorded as unassigned are excluded from the current explorer.
       </p>
@@ -237,13 +237,13 @@
         <fieldset class="explorer-control-group location-filter-group">
           <legend>1 · Layer sample filters</legend>
           <div class="location-filter-grid">
-            <label><span>Cruise</span><select id="filter-cruise"></select></label>
-            <label><span>Ocean basin</span><select id="filter-ocean-basin"></select></label>
-            <label><span>Longhurst province</span><select id="filter-province"></select></label>
-            <label><span>Year</span><select id="filter-year"></select></label>
-            <label><span>Month</span><select id="filter-month"></select></label>
-            <label><span>Season</span><select id="filter-season"></select></label>
-            <label><span>Depth category</span><select id="filter-depth-zone"></select></label>
+            <div class="multi-filter" id="filter-cruise"></div>
+            <div class="multi-filter" id="filter-ocean-basin"></div>
+            <div class="multi-filter" id="filter-province"></div>
+            <div class="multi-filter" id="filter-year"></div>
+            <div class="multi-filter" id="filter-month"></div>
+            <div class="multi-filter" id="filter-season"></div>
+            <div class="multi-filter" id="filter-depth-zone"></div>
             <button class="filter-reset-button" id="clear-location-filters" type="button">Clear sample filters</button>
           </div>
         </fieldset>
@@ -283,9 +283,12 @@
 
       <div class="explorer-downloads" aria-label="Download explorer outputs">
         <button class="download-button" id="download-map-image" type="button">Download map PNG</button>
+        <button class="download-button" id="download-map-code" type="button">Download map R code</button>
         <button class="download-button" id="download-depth-image" type="button">Download cross-section PNG</button>
+        <button class="download-button" id="download-depth-code" type="button">Download cross-section R code</button>
         <button class="download-button" id="download-explorer-data" type="button">Download filtered data CSV</button>
       </div>
+      <p class="explorer-download-help">For a reproducible figure, download the filtered CSV and the corresponding R script into the same folder.</p>
 
       <figure class="interactive-figure">
         <div class="interactive-figure-heading">
