@@ -13,9 +13,6 @@
   const asvSearchHelp = document.querySelector("#asv-search-help");
   const status = document.querySelector("#explorer-status");
   const abundanceLegend = document.querySelector("#abundance-legend");
-  const abundanceLegendLow = document.querySelector("#abundance-legend-low");
-  const abundanceLegendMid = document.querySelector("#abundance-legend-mid");
-  const abundanceLegendHigh = document.querySelector("#abundance-legend-high");
   const downloadMapImage = document.querySelector("#download-map-image");
   const downloadMapCode = document.querySelector("#download-map-code");
   const downloadDepthImage = document.querySelector("#download-depth-image");
@@ -233,7 +230,9 @@ if (any(grump$detected, na.rm = TRUE)) {
       color = "#1768ac", alpha = 0.88
     ) +
     scale_size_area(
-      max_size = 8, limits = c(0, 100), breaks = c(1, 10, 100),
+      max_size = 8, limits = c(0, 100),
+      breaks = c(0.05, 1, 10, 25, 50, 100),
+      labels = c("<0.1%", "1%", "10%", "25%", "50%", "100%"),
       name = "Relative abundance (%)"
     )
 }
@@ -300,7 +299,9 @@ if (any(grump$detected, na.rm = TRUE)) {
       color = "#1768ac", alpha = 0.88
     ) +
     scale_size_area(
-      max_size = 8, limits = c(0, 100), breaks = c(1, 10, 100),
+      max_size = 8, limits = c(0, 100),
+      breaks = c(0.05, 1, 10, 25, 50, 100),
+      labels = c("<0.1%", "1%", "10%", "25%", "50%", "100%"),
       name = "Relative abundance (%)"
     )
 }
@@ -631,13 +632,6 @@ ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "whit
     `Relative abundance: ${formatPercent(sample.abundance)}`
   ].join("\n");
 
-  const updateAbundanceLegend = () => {
-    const legendValues = [0.01, 0.1, 1];
-    [abundanceLegendLow, abundanceLegendMid, abundanceLegendHigh].forEach((element, index) => {
-      if (element) element.textContent = formatPercent(legendValues[index]);
-    });
-  };
-
   const land = topojson.feature(world, world.objects.land);
   const projection = d3.geoNaturalEarth1()
     .rotate([150, 0])
@@ -754,7 +748,6 @@ ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "whit
       ? `${selectedBiology.display} occurs in ${matchingSamples.toLocaleString()} of ${filteredSamples.length.toLocaleString()} samples for ${filterText}.`
       : `${filteredSamples.length.toLocaleString()} samples shown for ${filterText}. Search an organism, group, ASV hash, or ASV sequence to plot total relative abundance.`;
     abundanceLegend.hidden = !selectedBiology;
-    updateAbundanceLegend();
     renderMap(filteredSamples, abundanceBySample);
     renderDepthChart(filteredSamples, abundanceBySample);
   };
