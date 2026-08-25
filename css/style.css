@@ -720,7 +720,7 @@ button { font: inherit; }
 .abundance-size-key {
   width: min(520px, 100%);
   min-width: 0;
-  min-height: 28px;
+  min-height: 38px;
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
@@ -744,28 +744,28 @@ button { font: inherit; }
   white-space: nowrap;
 }
 .abundance-size-key > span:nth-child(1) i {
-  width: 2px;
-  height: 2px;
+  width: 7px;
+  height: 7px;
 }
 .abundance-size-key > span:nth-child(2) i {
-  width: 3px;
-  height: 3px;
+  width: 9px;
+  height: 9px;
 }
 .abundance-size-key > span:nth-child(3) i {
-  width: 8px;
-  height: 8px;
+  width: 15px;
+  height: 15px;
 }
 .abundance-size-key > span:nth-child(4) i {
-  width: 13px;
-  height: 13px;
+  width: 21px;
+  height: 21px;
 }
 .abundance-size-key > span:nth-child(5) i {
-  width: 18px;
-  height: 18px;
+  width: 27px;
+  height: 27px;
 }
 .abundance-size-key > span:nth-child(6) i {
-  width: 26px;
-  height: 26px;
+  width: 36px;
+  height: 36px;
 }
 .explorer-downloads {
   display: flex;

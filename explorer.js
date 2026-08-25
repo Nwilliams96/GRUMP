@@ -54,7 +54,8 @@
   const normalizedName = (value) => displayName(value).toLowerCase().replace(/\s+/g, " ").trim();
   // GRUMP stores relative abundance as a fraction; display and export it as percent.
   const formatPercent = (value) => `${d3.format(".3~g")(Number(value || 0) * 100)}%`;
-  const abundanceRadius = d3.scaleSqrt().domain([0, 1]).range([0, 13]).clamp(true);
+  // Use one fixed scale everywhere, with a visible minimum for detected rare taxa.
+  const abundanceRadius = d3.scaleSqrt().domain([0, 1]).range([3, 18]).clamp(true);
   const loadedScripts = new Map();
   let selectedBiology = null;
   let currentTaxonLookup = new Map();
@@ -229,8 +230,8 @@ if (any(grump$detected, na.rm = TRUE)) {
       aes(x = longitude, y = latitude, size = total_relative_abundance_percent),
       color = "#1768ac", alpha = 0.88
     ) +
-    scale_size_area(
-      max_size = 8, limits = c(0, 100),
+    scale_size_continuous(
+      range = c(2.4, 10), limits = c(0, 100),
       breaks = c(0.05, 1, 10, 25, 50, 100),
       labels = c("<0.1%", "1%", "10%", "25%", "50%", "100%"),
       name = "Relative abundance (%)"
@@ -298,8 +299,8 @@ if (any(grump$detected, na.rm = TRUE)) {
       aes(size = total_relative_abundance_percent),
       color = "#1768ac", alpha = 0.88
     ) +
-    scale_size_area(
-      max_size = 8, limits = c(0, 100),
+    scale_size_continuous(
+      range = c(2.4, 10), limits = c(0, 100),
       breaks = c(0.05, 1, 10, 25, 50, 100),
       labels = c("<0.1%", "1%", "10%", "25%", "50%", "100%"),
       name = "Relative abundance (%)"
