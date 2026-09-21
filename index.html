@@ -252,7 +252,9 @@
         The default view shows every GRUMP sample. Select one or more cruises, ocean basins, provinces, years,
         months, seasons, and depth categories, then layer those filters together. Search any GRUMP grouping, standard taxonomic rank, exact ASV
         hash, or ASV sequence. Light-grey dots show where samples exist, while blue circle size shows total relative
-        abundance within each sample. ASVs recorded as unassigned are excluded from the current explorer.
+        abundance within each sample. Use the standard bubble scale for comparisons among organisms, or fit the scale
+        to the visible abundance range to reveal variation within one organism. ASVs recorded as unassigned are
+        excluded from the current explorer.
       </p>
 
       <div class="explorer-controls" aria-label="GRUMP data controls">
@@ -276,10 +278,20 @@
               <span>Biological level</span>
               <select id="taxonomy-level"></select>
             </label>
-            <label class="taxon-search-label">
-              <span id="taxon-search-label">Organism or group</span>
-              <input id="taxon-search" list="taxon-options" type="search" autocomplete="off" placeholder="Start typing a name" />
-              <datalist id="taxon-options"></datalist>
+            <div class="taxon-search-field">
+              <label for="taxon-search"><span id="taxon-search-label">Organism or group</span></label>
+              <div class="taxon-search-combobox">
+                <input id="taxon-search" type="search" autocomplete="off" placeholder="Start typing a name"
+                  role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="taxon-suggestions" />
+                <div class="taxon-suggestions" id="taxon-suggestions" role="listbox" hidden></div>
+              </div>
+            </div>
+            <label>
+              <span>Bubble size</span>
+              <select id="bubble-scale-mode">
+                <option value="fixed">Standard · fixed scale</option>
+                <option value="fitted">Fitted · organism range</option>
+              </select>
             </label>
             <button class="taxon-search-button" id="apply-taxon-search" type="button">Plot distribution</button>
             <button class="filter-reset-button" id="clear-taxon-search" type="button">Samples only</button>
@@ -294,8 +306,8 @@
       <div class="explorer-summary" aria-live="polite">
         <p id="explorer-status">Loading GRUMP samples…</p>
         <div class="abundance-legend" id="abundance-legend" hidden>
-          <span>Relative abundance (%) · fixed scale</span>
-          <span class="abundance-size-key">
+          <span id="abundance-legend-label">Relative abundance (%) · standard fixed scale</span>
+          <span class="abundance-size-key" id="abundance-size-key">
             <span><i></i><b>&lt;0.1%</b></span>
             <span><i></i><b>1%</b></span>
             <span><i></i><b>10%</b></span>

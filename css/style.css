@@ -638,11 +638,69 @@ button { font: inherit; }
 }
 .biological-filter-grid {
   display: grid;
-  grid-template-columns: minmax(190px, 0.8fr) minmax(280px, 1.5fr) auto auto;
+  grid-template-columns: minmax(165px, 0.7fr) minmax(250px, 1.25fr) minmax(190px, 0.85fr) auto auto;
   gap: 16px;
   align-items: end;
   margin-top: 18px;
 }
+.taxon-search-field {
+  position: relative;
+  display: grid;
+  gap: 7px;
+}
+.taxon-search-field > label { display: block; }
+.taxon-search-combobox { position: relative; }
+.taxon-suggestions {
+  position: absolute;
+  z-index: 15;
+  top: calc(100% - 1px);
+  left: 0;
+  width: 100%;
+  max-height: 330px;
+  overflow-y: auto;
+  border: 1px solid var(--ink);
+  background: var(--white);
+  box-shadow: 0 12px 28px rgba(16, 16, 16, 0.16);
+}
+.taxon-suggestions[hidden] { display: none; }
+.taxon-suggestion {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 11px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--white);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.taxon-suggestion:last-child { border-bottom: 0; }
+.taxon-suggestion:hover,
+.taxon-suggestion:focus-visible,
+.taxon-suggestion.is-active {
+  outline: none;
+  background: var(--ink);
+  color: var(--white);
+}
+.taxon-suggestion-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.82rem;
+}
+.taxon-suggestion-category {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.taxon-suggestion:hover .taxon-suggestion-category,
+.taxon-suggestion:focus-visible .taxon-suggestion-category,
+.taxon-suggestion.is-active .taxon-suggestion-category { color: var(--white); }
 .explorer-controls label {
   display: grid;
   gap: 7px;

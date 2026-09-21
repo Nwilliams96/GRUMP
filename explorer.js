@@ -5,14 +5,17 @@
   const depthElement = document.querySelector("#grump-depth-chart");
   const taxonomyLevel = document.querySelector("#taxonomy-level");
   const taxonSearch = document.querySelector("#taxon-search");
-  const taxonOptions = document.querySelector("#taxon-options");
+  const taxonSuggestions = document.querySelector("#taxon-suggestions");
   const taxonSearchLabel = document.querySelector("#taxon-search-label");
+  const bubbleScaleMode = document.querySelector("#bubble-scale-mode");
   const applyTaxonSearchButton = document.querySelector("#apply-taxon-search");
   const clearTaxonSearchButton = document.querySelector("#clear-taxon-search");
   const clearLocationFiltersButton = document.querySelector("#clear-location-filters");
   const asvSearchHelp = document.querySelector("#asv-search-help");
   const status = document.querySelector("#explorer-status");
   const abundanceLegend = document.querySelector("#abundance-legend");
+  const abundanceLegendLabel = document.querySelector("#abundance-legend-label");
+  const abundanceSizeKey = document.querySelector("#abundance-size-key");
   const downloadMapImage = document.querySelector("#download-map-image");
   const downloadMapCode = document.querySelector("#download-map-code");
   const downloadDepthImage = document.querySelector("#download-depth-image");
@@ -52,14 +55,73 @@
 
   const displayName = (value) => String(value || "").replaceAll("_", " ");
   const normalizedName = (value) => displayName(value).toLowerCase().replace(/\s+/g, " ").trim();
+  const taxonSuggestionIndex = Object.entries(levels).flatMap(([levelKey, level]) =>
+    level.taxa.map(([rawValue, chunk]) => ({
+      levelKey,
+      levelLabel: level.label,
+      rawValue,
+      chunk,
+      displayValue: displayName(rawValue),
+      normalizedValue: normalizedName(rawValue)
+    }))
+  );
   // GRUMP stores relative abundance as a fraction; display and export it as percent.
   const formatPercent = (value) => `${d3.format(".3~g")(Number(value || 0) * 100)}%`;
   // Use one fixed scale everywhere, with a visible minimum for detected rare taxa.
-  const abundanceRadius = d3.scaleSqrt().domain([0, 1]).range([3, 18]).clamp(true);
+  const fixedAbundanceRadius = d3.scaleSqrt().domain([0, 1]).range([3, 18]).clamp(true);
+  const fixedLegendValues = [0.0005, 0.01, 0.1, 0.25, 0.5, 1];
+  const fixedLegendLabels = ["<0.1%", "1%", "10%", "25%", "50%", "100%"];
   const loadedScripts = new Map();
   let selectedBiology = null;
   let currentTaxonLookup = new Map();
+  let suggestionMatches = [];
+  let activeSuggestionIndex = -1;
   let mapTransform = d3.zoomIdentity;
+
+  const visibleAbundanceValues = (filteredSamples, abundanceBySample) => filteredSamples
+    .filter((sample) => abundanceBySample.has(sample.index))
+    .map((sample) => Number(abundanceBySample.get(sample.index)))
+    .filter((value) => Number.isFinite(value) && value > 0)
+    .sort(d3.ascending);
+
+  const abundanceRadiusFor = (filteredSamples, abundanceBySample) => {
+    if (bubbleScaleMode?.value !== "fitted") return fixedAbundanceRadius;
+    const values = visibleAbundanceValues(filteredSamples, abundanceBySample);
+    if (!values.length) return fixedAbundanceRadius;
+    const [minimum, maximum] = d3.extent(values);
+    if (minimum === maximum) return () => 10.5;
+    return d3.scaleSqrt().domain([minimum, maximum]).range([3, 18]).clamp(true);
+  };
+
+  const renderAbundanceLegend = (filteredSamples, abundanceBySample, radiusScale) => {
+    const values = visibleAbundanceValues(filteredSamples, abundanceBySample);
+    abundanceLegend.hidden = !selectedBiology || !values.length;
+    if (abundanceLegend.hidden) return;
+
+    const fitted = bubbleScaleMode?.value === "fitted";
+    abundanceLegendLabel.textContent = fitted
+      ? "Relative abundance (%) · fitted to visible organism range"
+      : "Relative abundance (%) · standard fixed scale";
+    const referenceValues = fitted
+      ? [...new Set([values[0], d3.quantileSorted(values, 0.5), values.at(-1)])]
+      : fixedLegendValues;
+    const referenceLabels = fitted
+      ? referenceValues.map(formatPercent)
+      : fixedLegendLabels;
+
+    abundanceSizeKey.replaceChildren();
+    referenceValues.forEach((value, index) => {
+      const item = document.createElement("span");
+      const bubble = document.createElement("i");
+      const label = document.createElement("b");
+      const diameter = Math.max(2, radiusScale(value) * 2);
+      bubble.style.width = `${diameter}px`;
+      bubble.style.height = `${diameter}px`;
+      label.textContent = referenceLabels[index];
+      item.append(bubble, label);
+      abundanceSizeKey.append(item);
+    });
+  };
 
   const safeFilePart = (value) => String(value || "all-samples")
     .toLowerCase()
@@ -196,10 +258,24 @@
     ? activeFilters().map((definition) => `${definition.label}: ${definition.values.map((value) => formatFilterValue(definition, value)).join(", ")}`).join("; ")
     : "All sampling locations";
 
+  const rBubbleScaleCode = () => bubbleScaleMode?.value === "fitted"
+    ? `scale_size_continuous(
+      range = c(2.4, 10),
+      breaks = scales::breaks_pretty(3),
+      name = "Relative abundance (%) — fitted to visible range"
+    )`
+    : `scale_size_continuous(
+      range = c(2.4, 10), limits = c(0, 100),
+      breaks = c(0.05, 1, 10, 25, 50, 100),
+      labels = c("<0.1%", "1%", "10%", "25%", "50%", "100%"),
+      name = "Relative abundance (%)"
+    )`;
+
   const mapRCode = () => `# Reproduce the GRUMP Explorer map
 # Generated from the active explorer selection.
 # Biological selection: ${selectionDescription()}
 # Sample filters: ${filterDescription()}
+# Bubble scale: ${bubbleScaleMode?.value === "fitted" ? "Fitted to the visible organism range" : "Standard fixed 0–100% scale"}
 # Place this script in the same folder as ${currentDataFileName()}.
 # If needed: install.packages(c("ggplot2", "sf", "rnaturalearth"))
 
@@ -230,12 +306,7 @@ if (any(grump$detected, na.rm = TRUE)) {
       aes(x = longitude, y = latitude, size = total_relative_abundance_percent),
       color = "#1768ac", alpha = 0.88
     ) +
-    scale_size_continuous(
-      range = c(2.4, 10), limits = c(0, 100),
-      breaks = c(0.05, 1, 10, 25, 50, 100),
-      labels = c("<0.1%", "1%", "10%", "25%", "50%", "100%"),
-      name = "Relative abundance (%)"
-    )
+    ${rBubbleScaleCode()}
 }
 
 map_plot <- map_plot +
@@ -261,6 +332,7 @@ ggsave(output_file, map_plot, width = 12, height = 6.2, dpi = 300, bg = "white")
 # Generated from the active explorer selection.
 # Biological selection: ${selectionDescription()}
 # Sample filters: ${filterDescription()}
+# Bubble scale: ${bubbleScaleMode?.value === "fitted" ? "Fitted to the visible organism range" : "Standard fixed 0–100% scale"}
 # Place this script in the same folder as ${currentDataFileName()}.
 # If needed: install.packages("ggplot2")
 
@@ -299,12 +371,7 @@ if (any(grump$detected, na.rm = TRUE)) {
       aes(size = total_relative_abundance_percent),
       color = "#1768ac", alpha = 0.88
     ) +
-    scale_size_continuous(
-      range = c(2.4, 10), limits = c(0, 100),
-      breaks = c(0.05, 1, 10, 25, 50, 100),
-      labels = c("<0.1%", "1%", "10%", "25%", "50%", "100%"),
-      name = "Relative abundance (%)"
-    )
+    ${rBubbleScaleCode()}
 }
 
 cross_section <- cross_section +
@@ -516,8 +583,82 @@ ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "whit
     });
   };
 
+  const closeTaxonSuggestions = () => {
+    taxonSuggestions.hidden = true;
+    taxonSearch.setAttribute("aria-expanded", "false");
+    taxonSearch.removeAttribute("aria-activedescendant");
+    suggestionMatches = [];
+    activeSuggestionIndex = -1;
+  };
+
+  const setActiveSuggestion = (index) => {
+    const options = [...taxonSuggestions.querySelectorAll(".taxon-suggestion")];
+    if (!options.length) return;
+    activeSuggestionIndex = (index + options.length) % options.length;
+    options.forEach((option, optionIndex) => {
+      const isActive = optionIndex === activeSuggestionIndex;
+      option.classList.toggle("is-active", isActive);
+      option.setAttribute("aria-selected", String(isActive));
+    });
+    const activeOption = options[activeSuggestionIndex];
+    taxonSearch.setAttribute("aria-activedescendant", activeOption.id);
+    activeOption.scrollIntoView({ block: "nearest" });
+  };
+
+  const chooseTaxonSuggestion = (entry) => {
+    taxonomyLevel.value = entry.levelKey;
+    selectedBiology = null;
+    populateTaxonOptions();
+    taxonSearch.value = entry.displayValue;
+    closeTaxonSuggestions();
+    updateExplorer();
+    taxonSearch.focus();
+  };
+
+  const showTaxonSuggestions = () => {
+    const query = normalizedName(taxonSearch.value);
+    if (taxonomyLevel.value === "ASV" || !query) {
+      closeTaxonSuggestions();
+      return;
+    }
+
+    suggestionMatches = taxonSuggestionIndex
+      .filter(({ normalizedValue }) => normalizedValue.includes(query))
+      .sort((a, b) => {
+        const aExact = a.normalizedValue === query ? 0 : 1;
+        const bExact = b.normalizedValue === query ? 0 : 1;
+        const aStarts = a.normalizedValue.startsWith(query) ? 0 : 1;
+        const bStarts = b.normalizedValue.startsWith(query) ? 0 : 1;
+        return aExact - bExact || aStarts - bStarts || a.displayValue.localeCompare(b.displayValue) || a.levelLabel.localeCompare(b.levelLabel);
+      })
+      .slice(0, 12);
+
+    taxonSuggestions.replaceChildren();
+    suggestionMatches.forEach((entry, index) => {
+      const option = document.createElement("button");
+      option.type = "button";
+      option.className = "taxon-suggestion";
+      option.id = `taxon-suggestion-${index}`;
+      option.setAttribute("role", "option");
+      option.setAttribute("aria-selected", "false");
+      const name = document.createElement("span");
+      name.className = "taxon-suggestion-name";
+      name.textContent = entry.displayValue;
+      const category = document.createElement("span");
+      category.className = "taxon-suggestion-category";
+      category.textContent = entry.levelLabel;
+      option.append(name, category);
+      option.addEventListener("click", () => chooseTaxonSuggestion(entry));
+      taxonSuggestions.append(option);
+    });
+
+    taxonSuggestions.hidden = !suggestionMatches.length;
+    taxonSearch.setAttribute("aria-expanded", String(Boolean(suggestionMatches.length)));
+    activeSuggestionIndex = -1;
+  };
+
   const populateTaxonOptions = () => {
-    taxonOptions.replaceChildren();
+    closeTaxonSuggestions();
     currentTaxonLookup = new Map();
     const isAsv = taxonomyLevel.value === "ASV";
     asvSearchHelp.hidden = !isAsv;
@@ -528,9 +669,6 @@ ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "whit
     levels[taxonomyLevel.value].taxa.forEach(([rawValue, chunk]) => {
       const displayValue = displayName(rawValue);
       currentTaxonLookup.set(normalizedName(displayValue), [rawValue, chunk]);
-      const option = document.createElement("option");
-      option.value = displayValue;
-      taxonOptions.append(option);
     });
   };
 
@@ -597,8 +735,8 @@ ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "whit
       selectedBiology = null;
       status.textContent = error.message;
       abundanceLegend.hidden = true;
-      renderMap(getFilteredSamples(), new Map());
-      renderDepthChart(getFilteredSamples(), new Map());
+      renderMap(getFilteredSamples(), new Map(), fixedAbundanceRadius);
+      renderDepthChart(getFilteredSamples(), new Map(), fixedAbundanceRadius);
     } finally {
       setSearchBusy(false);
     }
@@ -687,7 +825,7 @@ ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "whit
     .fitExtent([[24, 24], [976, 490]], land);
   const geoPath = d3.geoPath(projection);
 
-  const renderMap = (filteredSamples, abundanceBySample) => {
+  const renderMap = (filteredSamples, abundanceBySample, radiusScale = fixedAbundanceRadius) => {
     const svg = d3.select(mapElement);
     svg.selectAll("*").remove();
     const viewport = svg.append("g").attr("class", "map-viewport");
@@ -726,12 +864,12 @@ ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "whit
       .join("circle")
       .attr("cx", (sample) => projection([sample.lon, sample.lat])[0])
       .attr("cy", (sample) => projection([sample.lon, sample.lat])[1])
-      .attr("r", (sample) => abundanceRadius(sample.abundance));
+      .attr("r", (sample) => radiusScale(sample.abundance));
     abundancePoints.append("title").text(abundanceDescription);
     renderAbundanceRange(svg, abundanceSamples);
   };
 
-  const renderDepthChart = (filteredSamples, abundanceBySample) => {
+  const renderDepthChart = (filteredSamples, abundanceBySample, radiusScale = fixedAbundanceRadius) => {
     const svg = d3.select(depthElement);
     svg.selectAll("*").remove();
     const width = 1000;
@@ -780,7 +918,7 @@ ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "whit
     const abundancePoints = svg.append("g").attr("class", "depth-abundance-points")
       .selectAll("circle").data(abundanceSamples.sort((a, b) => b.abundance - a.abundance)).join("circle")
       .attr("cx", (sample) => x(sample[horizontalKey])).attr("cy", (sample) => y(sample.depth))
-      .attr("r", (sample) => abundanceRadius(sample.abundance));
+      .attr("r", (sample) => radiusScale(sample.abundance));
     abundancePoints.append("title").text(abundanceDescription);
     renderAbundanceRange(svg, abundanceSamples, width);
   };
@@ -788,6 +926,7 @@ ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "whit
   const updateExplorer = () => {
     const filteredSamples = getFilteredSamples();
     const abundanceBySample = getAbundanceMap();
+    const radiusScale = abundanceRadiusFor(filteredSamples, abundanceBySample);
     const matchingSamples = selectedBiology
       ? filteredSamples.filter((sample) => abundanceBySample.has(sample.index)).length
       : filteredSamples.length;
@@ -798,9 +937,9 @@ ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "whit
     status.textContent = selectedBiology
       ? `${selectedBiology.display} occurs in ${matchingSamples.toLocaleString()} of ${filteredSamples.length.toLocaleString()} samples for ${filterText}.`
       : `${filteredSamples.length.toLocaleString()} samples shown for ${filterText}. Search an organism, group, ASV hash, or ASV sequence to plot total relative abundance.`;
-    abundanceLegend.hidden = !selectedBiology;
-    renderMap(filteredSamples, abundanceBySample);
-    renderDepthChart(filteredSamples, abundanceBySample);
+    renderAbundanceLegend(filteredSamples, abundanceBySample, radiusScale);
+    renderMap(filteredSamples, abundanceBySample, radiusScale);
+    renderDepthChart(filteredSamples, abundanceBySample, radiusScale);
   };
 
   clearLocationFiltersButton.addEventListener("click", () => {
@@ -816,12 +955,37 @@ ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "whit
     updateExplorer();
   });
   applyTaxonSearchButton.addEventListener("click", applyTaxonSearch);
+  taxonSearch.addEventListener("input", showTaxonSuggestions);
+  taxonSearch.addEventListener("focus", showTaxonSuggestions);
   taxonSearch.addEventListener("keydown", (event) => {
+    if (!taxonSuggestions.hidden && event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveSuggestion(activeSuggestionIndex < 0 ? 0 : activeSuggestionIndex + 1);
+      return;
+    }
+    if (!taxonSuggestions.hidden && event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveSuggestion(activeSuggestionIndex < 0 ? suggestionMatches.length - 1 : activeSuggestionIndex - 1);
+      return;
+    }
+    if (event.key === "Escape") {
+      closeTaxonSuggestions();
+      return;
+    }
     if (event.key === "Enter") {
       event.preventDefault();
+      if (!taxonSuggestions.hidden && activeSuggestionIndex >= 0) {
+        chooseTaxonSuggestion(suggestionMatches[activeSuggestionIndex]);
+        return;
+      }
+      closeTaxonSuggestions();
       applyTaxonSearch();
     }
   });
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(".taxon-search-field")) closeTaxonSuggestions();
+  });
+  bubbleScaleMode?.addEventListener("change", updateExplorer);
   clearTaxonSearchButton.addEventListener("click", () => {
     selectedBiology = null;
     taxonSearch.value = "";
@@ -840,7 +1004,9 @@ ggsave(output_file, cross_section, width = 12, height = 6, dpi = 300, bg = "whit
     crossSectionDescription.textContent = `Depth increases downward; ${axisName.toLowerCase()} runs from ${direction}.`;
     crossSectionCaption.textContent = `Interactive Figure 2. Cross section by depth and ${axisName.toLowerCase()} for the filtered GRUMP samples.`;
     depthElement.setAttribute("aria-label", `Interactive GRUMP cross section by depth and ${axisName.toLowerCase()}`);
-    renderDepthChart(getFilteredSamples(), getAbundanceMap());
+    const filteredSamples = getFilteredSamples();
+    const abundanceBySample = getAbundanceMap();
+    renderDepthChart(filteredSamples, abundanceBySample, abundanceRadiusFor(filteredSamples, abundanceBySample));
   });
 
   initializeMultiFilters();
